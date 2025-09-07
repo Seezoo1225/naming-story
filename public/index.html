@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Your Story Naming</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; background:#f7f7fb; }
+    .card { max-width: 960px; margin: 0 auto; padding: 24px; border: 1px solid #ddd; border-radius: 12px; background:#fff; }
+    label { display:block; font-weight:600; margin-top: 16px; }
+    input, select, button {
+      width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px;
+    }
+    button { cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
+    .result-card { padding: 16px; background:#fafafa; border:1px solid #e5e5e5; border-radius: 10px; }
+    .name { font-size: 18px; font-weight: 700; }
+    .copy { margin-top: 4px; font-style: italic; color:#333; }
+    .story { margin-top: 8px; line-height: 1.7; white-space: pre-wrap; color:#333; }
+    .meta { margin-top: 12px; font-size: 13px; color:#444; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background:#f0f0f0; }
+    .footer { margin-top: 24px; font-size: 12px; color:#666; text-align:center; }
+    .muted { color:#666; font-size:12px; margin-top: 6px; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef; font-size:12px; margin-left:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Your Story Naming</h1>
+    <!-- ★ タイトル下の文言 -->
+    <p><b>AI</b> が考える現代的な名前 × <b>STORY</b>（物語） × <b>姓名判断</b>。<br>苗字・性別・イメージから、無料で <b>3候補</b> をご提案します。</p>
+
+    <label>苗字</label>
+    <input id="surname" placeholder="例: 山田" />
+
+    <label>性別</label>
+    <select id="gender">
+      <option value="boy">男の子</option>
+      <option value="girl">女の子</option>
+      <option value="unknown" selected>どちらでも</option>
+    </select>
+
+    <label>希望イメージ</label>
+    <input id="concept" placeholder="例: 強さ / 優しさ / 国際感 / 静かなカリスマ" />
+
+    <button id="submit">無料で診断する</button>
+
+    <div id="results" class="grid" style="display:none;"></div>
+
+    <div id="policy" class="muted" style="display:none; margin-top:12px;"></div>
+
+    <div class="footer">© Your Story Naming</div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function kakuRow(labelA, objA, labelB, objB) {
+      const aVal = objA?.value ?? "-";
+      const aGrd = objA?.grade ? `<span class="pill">${objA.grade}</span>` : "";
+      const bVal = objB?.value ?? "-";
+      const bGrd = objB?.grade ? `<span class="pill">${objB.grade}</span>` : "";
+      return `<tr><th>${labelA}</th><td>${aVal} ${aGrd}</td><th>${labelB}</th><td>${bVal} ${bGrd}</td></tr>`;
+    }
+
+    function renderCandidates(data) {
+      const wrap = $("results");
+      wrap.innerHTML = "";
+
+      (data.candidates || []).forEach((c) => {
+        const div = document.createElement("div");
+        div.className = "result-card";
+
+        const bd = Array.isArray(c.strokes?.breakdown)
+          ? c.strokes.breakdown.map(([k,s]) => `${k}:${s}`).join(" / ")
+          : "-";
+
+        div.innerHTML = `
+          <div class="name">${c.name || ""}</div>
+          <div class="meta">${c.reading ? "読み：" + c.reading : ""}</div>
+          <div class="copy">${c.copy || ""}</div>
+          <div class="story">${c.story || ""}</div>
+
+          <div class="meta"><b>姓名判断（推定）</b></div>
+          <table>
+            ${kakuRow("天格", c.fortune?.tenkaku, "人格", c.fortune?.jinkaku)}
+            ${kakuRow("地格", c.fortune?.chikaku, "外格", c.fortune?.gaikaku)}
+            ${kakuRow("総格", c.fortune?.soukaku, "総合運", { value: "", grade: c.fortune?.luck?.overall })}
+            ${kakuRow("仕事運", { value:"", grade:c.fortune?.luck?.work }, "恋愛運", { value:"", grade:c.fortune?.luck?.love })}
+            ${kakuRow("健康運", { value:"", grade:c.fortune?.luck?.health }, "備考", { value: c.fortune?.note || "", grade:"" })}
+          </table>
+
+          <div class="meta"><b>画数診断（推定）</b></div>
+          <table>
+            <tr><th>姓 合計</th><td>${c.strokes?.surnameTotal ?? "-"}</td><th>名 合計</th><td>${c.strokes?.givenTotal ?? "-"}</td></tr>
+            <tr><th>総画</th><td colspan="3">${c.strokes?.total ?? "-"}</td></tr>
+            <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
+          </table>
+        `;
+        wrap.appendChild(div);
+      });
+
+      wrap.style.display = "grid";
+
+      // 流派の表示
+      const policyEl = $("policy");
+      if (data.policy?.ryuha || data.policy?.notes) {
+        policyEl.innerHTML = `<b>流派/計算方針：</b>${data.policy.ryuha || ""}<br>${data.policy.notes || ""}`;
+        policyEl.style.display = "block";
+      } else {
+        policyEl.style.display = "none";
+      }
+    }
+
+    $("submit").addEventListener("click", async () => {
+      const payload = {
+        surname: $("surname").value.trim(),
+        gender: $("gender").value,
+        concept: $("concept").value.trim()
+      };
+      if (!payload.surname || !payload.concept) {
+        alert("苗字と希望イメージを入力してください。");
+        return;
+      }
+      $("submit").disabled = true;
+      $("submit").textContent = "生成中…";
+
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || "Server error");
+        renderCandidates(data);
+      } catch (e) {
+        console.error(e);
+        alert("生成に失敗しました。時間をおいて再度お試しください。");
+      } finally {
+        $("submit").disabled = false;
+        $("submit").textContent = "無料で診断する";
+      }
+    });
+  </script>
+</body>
+</html>
+
