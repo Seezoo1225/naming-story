@@ -4,65 +4,171 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Your Story Naming</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; background:#f7f7fb; }
-    .card { max-width: 960px; margin: 0 auto; padding: 24px; border: 1px solid #ddd; border-radius: 12px; background:#fff; }
-    label { display:block; font-weight:600; margin-top: 16px; }
-    input, select, button {
-      width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px;
+    body {
+      font-family: 'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0;
+      background: #f0f4f8;
+      color: #333;
     }
-    button { cursor: pointer; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
-    .result-card { padding: 16px; background:#fafafa; border:1px solid #e5e5e5; border-radius: 10px; }
-    .name { font-size: 18px; font-weight: 700; }
-    .copy { margin-top: 4px; font-style: italic; color:#333; }
-    .story { margin-top: 8px; line-height: 1.7; white-space: pre-wrap; color:#333; }
-    .meta { margin-top: 12px; font-size: 13px; color:#444; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
-    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
-    th { background:#f0f0f0; }
-    .footer { margin-top: 24px; font-size: 12px; color:#666; text-align:center; }
-    .muted { color:#666; font-size:12px; margin-top: 6px; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef; font-size:12px; margin-left:6px; }
+    header {
+      background: linear-gradient(135deg, #4e8cff, #6bc5ff);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    header p {
+      margin-top: 8px;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    main {
+      max-width: 960px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    label {
+      display:block;
+      font-weight:600;
+      margin-top: 16px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+    }
+    button {
+      margin-top: 20px;
+      background: #4e8cff;
+      color: white;
+      border: none;
+      font-weight: 600;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #357ae8;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .result-card {
+      padding: 16px;
+      background: #fafcff;
+      border:1px solid #e0e7ef;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2b4cb3;
+    }
+    .copy {
+      margin-top: 4px;
+      font-style: italic;
+      color: #555;
+    }
+    .story {
+      margin-top: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: #333;
+    }
+    .meta {
+      margin-top: 12px;
+      font-size: 13px;
+      color:#444;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background:#f0f4f8;
+    }
+    .pill {
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#eef;
+      font-size:12px;
+      margin-left:6px;
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      padding: 20px;
+    }
+    footer a {
+      color: #4e8cff;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
   </style>
-<script defer data-domain="naming-story.vercel.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="AI × STORY × 姓名判断。苗字・性別・イメージから、現代的な“名前の物語”を3候補でご提案。">
-<meta property="og:title" content="Your Story Naming">
-<meta property="og:description" content="AI × STORY × 姓名判断で3候補を無料生成。">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://naming-story.vercel.app/">
-<meta property="og:image" content="https://naming-story.vercel.app/ogp.png">
-<link rel="icon" href="/favicon.ico">
 </head>
 <body>
-  <div class="card">
+  <header>
     <h1>Your Story Naming</h1>
-    <!-- ★ タイトル下の文言 -->
-    <p><b>AI</b> が考える現代的な名前 × <b>STORY</b>（物語） × <b>姓名判断</b>。<br>苗字・性別・イメージから、無料で <b>3候補</b> をご提案します。</p>
+    <p><b>AI × STORY × 姓名判断</b> で、あなたに合う名前を3候補ご提案します。</p>
+  </header>
+  <main>
+    <div class="card">
+      <label>苗字</label>
+      <input id="surname" placeholder="例: 山田" />
 
-    <label>苗字</label>
-    <input id="surname" placeholder="例: 山田" />
+      <label>性別</label>
+      <select id="gender">
+        <option value="boy">男の子</option>
+        <option value="girl">女の子</option>
+        <option value="unknown" selected>どちらでも</option>
+      </select>
 
-    <label>性別</label>
-    <select id="gender">
-      <option value="boy">男の子</option>
-      <option value="girl">女の子</option>
-      <option value="unknown" selected>どちらでも</option>
-    </select>
+      <label>希望イメージ</label>
+      <input id="concept" placeholder="例: 強さ / 優しさ / 国際感 / 静かなカリスマ" />
 
-    <label>希望イメージ</label>
-    <input id="concept" placeholder="例: 強さ / 優しさ / 国際感 / 静かなカリスマ" />
-
-    <button id="submit">無料で診断する</button>
+      <button id="submit">無料で診断する</button>
+    </div>
 
     <div id="results" class="grid" style="display:none;"></div>
+    <div id="policy" class="meta" style="display:none; margin-top:12px;"></div>
+  </main>
 
-    <div id="policy" class="muted" style="display:none; margin-top:12px;"></div>
-
-    <div class="footer">
-  © Your Story Naming ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシー</a>
-</div>
-  </div>
+  <footer>
+    © Your Story Naming ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシー</a>
+  </footer>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -114,7 +220,6 @@
 
       wrap.style.display = "grid";
 
-      // 流派の表示
       const policyEl = $("policy");
       if (data.policy?.ryuha || data.policy?.notes) {
         policyEl.innerHTML = `<b>流派/計算方針：</b>${data.policy.ryuha || ""}<br>${data.policy.notes || ""}`;
@@ -157,4 +262,3 @@
   </script>
 </body>
 </html>
-
