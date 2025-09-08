@@ -4,111 +4,165 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Your Story Naming</title>
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
   <meta name="description" content="AI × STORY × 姓名判断。苗字・性別・イメージから、現代的な“名前の物語”を3候補でご提案。">
   <style>
-    :root{
-      --bg:#f5f1f8;
-      --fg:#2b2230;
-      --card:#ffffff;
-      --muted:#6b5d73;
-      --primary:#7741d9;            /* メイン紫 */
-      --primary-2:#b07cff;          /* 明るめ紫 */
-      --primary-3:#5e2fb8;          /* 濃い紫 */
-      --accent:#efe8ff;             /* 薄いアクセント */
-      --border:#e7e0ee;
+    :root {
+      --bg: #f9f9fb;
+      --fg: #2e2a2f;
+      --card: #ffffff;
+      --muted: #6b6270;
+      --primary: #77428D;   /* 江戸紫 */
+      --primary-dark: #5d2f6e;
+      --accent: #ede6f3;
+      --border: #e2dce8;
     }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --bg:#1c1520; --fg:#f2eaf7; --card:#231a2b;
-        --muted:#b9a9c4; --border:#3b2f45; --accent:#2d2240;
-      }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      font-family:'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      margin:0; background:var(--bg); color:var(--fg);
-      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 32px 20px;
+      text-align: center;
     }
-    /* ヘッダー：紫グラデ＋モバイルで余白最適化 */
-    header{
-      background:linear-gradient(135deg, var(--primary), var(--primary-2));
-      color:#fff; padding:28px 16px;
-      text-align:center; position:sticky; top:0; z-index:10;
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 700;
     }
-    header h1{ margin:0; font-size:clamp(20px, 4vw, 28px); font-weight:700; letter-spacing:.3px; }
-    header p{ margin:8px auto 0; max-width:720px; font-size:clamp(14px, 2.7vw, 16px); opacity:.95; line-height:1.6 }
-    /* コンテンツ幅と余白 */
-    main{ max-width:980px; margin:18px auto; padding:0 12px; }
-    .card{
-      background:var(--card); border:1px solid var(--border); border-radius:14px;
-      padding:clamp(16px, 3.5vw, 24px); box-shadow:0 6px 18px rgba(68,16,120,.08);
+    header p {
+      margin-top: 8px;
+      font-size: 1rem;
+      opacity: 0.95;
     }
-    /* ラベルとフォーム要素：タップ幅48px以上、フォーカス強調 */
-    label{ display:block; font-weight:600; margin-top:14px; font-size:15px }
-    input, select, button{
-      width:100%; padding:14px 14px; margin-top:8px; font-size:16px; font-family:inherit;
-      border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--fg);
-      outline:none; transition:border .2s, box-shadow .2s, transform .02s;
-      -webkit-tap-highlight-color:transparent;
+    main {
+      max-width: 960px;
+      margin: 20px auto;
+      padding: 0 16px;
     }
-    input:focus, select:focus{
-      border-color:var(--primary); box-shadow:0 0 0 3px rgba(119,65,217,.18);
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
     }
-    /* 送信ボタン */
-    button{
-      background:var(--primary); color:#fff; border:none; font-weight:700; letter-spacing:.2px;
-      margin-top:18px;
+    label {
+      display:block;
+      font-weight:600;
+      margin-top: 16px;
     }
-    button:hover{ background:var(--primary-3) }
-    button:active{ transform:translateY(1px) }
-    button[disabled]{ opacity:.7; cursor:not-allowed }
-    /* 結果カードのグリッド：モバイル1列→タブレット2→PC3 */
-    .grid{
-      display:grid; gap:clamp(12px, 2.2vw, 18px); margin-top:clamp(16px, 3vw, 24px);
-      grid-template-columns:repeat(1, 1fr);
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
     }
-    @media(min-width:640px){ .grid{ grid-template-columns:repeat(2, 1fr) } }
-    @media(min-width:980px){ .grid{ grid-template-columns:repeat(3, 1fr) } }
-    .result-card{
-      padding:16px; background:linear-gradient(0deg, var(--card), var(--card));
-      border:1px solid var(--border); border-radius:12px;
-      box-shadow:0 4px 12px rgba(31,16,45,.06);
+    input:focus, select:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(119,66,141,0.15);
     }
-    .name{ font-size:clamp(18px, 3.5vw, 20px); font-weight:800; color:var(--primary-3) }
-    .copy{ margin-top:4px; font-style:italic; color:var(--muted) }
-    .story{ margin-top:10px; line-height:1.8; white-space:pre-wrap }
-    .meta{ margin-top:12px; font-size:13px; color:var(--fg) }
-    /* テーブルをスマホで横スクロール可能に */
-    .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; }
-    table{ width:100%; border-collapse:collapse; min-width:420px; font-size:13px; }
-    th,td{ border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
-    th{ background:var(--accent) }
-    .pill{ display:inline-block; padding:2px 8px; border-radius:999px; background:#e8dcff; color:#4a2c8f; font-size:12px; margin-left:6px }
-    /* フッター */
-    footer{ margin:28px 0 40px; text-align:center; font-size:12px; color:var(--muted) }
-    footer a{ color:var(--primary-3); text-decoration:none; margin:0 6px }
-    footer a:hover{ text-decoration:underline }
-    /* 小さな端末での余白微調整 */
-    @media(max-width:380px){
-      .card{ padding:14px }
-      input, select, button{ padding:13px }
-      header{ padding:22px 12px }
+    button {
+      margin-top: 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      transition: background 0.3s;
+      cursor: pointer;
     }
+    button:hover { background: var(--primary-dark); }
+    button[disabled] { opacity: .7; cursor: not-allowed; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .result-card {
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+    .copy {
+      margin-top: 4px;
+      font-style: italic;
+      color: var(--muted);
+    }
+    .story {
+      margin-top: 10px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .meta {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--fg);
+    }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th {
+      background: var(--accent);
+    }
+    .pill {
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      background: var(--accent);
+      font-size:12px;
+      margin-left:6px;
+      color: var(--primary-dark);
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 20px;
+    }
+    footer a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      margin: 0 6px;
+    }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <header>
     <h1>Your Story Naming</h1>
-    <p><b>AI × STORY × 姓名判断</b> で、あなたに合う名前を3候補ご提案します。</p>
+    <p>AI × STORY × 姓名判断で、あなたに合う名前を3候補ご提案します。</p>
   </header>
 
   <main>
-    <div class="card" role="form" aria-label="名前生成フォーム">
+    <div class="card">
       <label for="surname">苗字</label>
-      <input id="surname" placeholder="例: 山田" inputmode="kana" autocomplete="family-name" />
+      <input id="surname" placeholder="例: 山田" />
 
       <label for="gender">性別</label>
       <select id="gender">
@@ -120,7 +174,7 @@
       <label for="concept">希望イメージ</label>
       <input id="concept" placeholder="例: 強さ / 優しさ / 国際感 / 静かなカリスマ" />
 
-      <button id="submit" aria-live="polite">無料で診断する</button>
+      <button id="submit">無料で診断する</button>
     </div>
 
     <div id="results" class="grid" style="display:none;"></div>
@@ -216,7 +270,6 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || "Server error");
         renderCandidates(data);
-        // スクロールして結果を見せる（モバイル想定）
         document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (e) {
         console.error(e);
