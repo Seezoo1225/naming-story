@@ -17,139 +17,34 @@
       --accent: #ede6f3;
       --border: #e2dce8;
     }
-    body {
-      font-family: 'Noto Sans JP', sans-serif;
-      margin: 0;
-      background: var(--bg);
-      color: var(--fg);
+    body { font-family: 'Noto Sans JP', sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
+    header { background: var(--primary); color: white; padding: 32px 20px; text-align: center; }
+    header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+    header p { margin-top: 8px; font-size: 1rem; opacity: 0.95; }
+    main { max-width: 960px; margin: 20px auto; padding: 0 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+    label { display:block; font-weight:600; margin-top: 16px; }
+    input, select, button, textarea {
+      width: 100%; padding: 12px; margin-top: 8px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 16px; font-family: inherit;
     }
-    header {
-      background: var(--primary);
-      color: white;
-      padding: 32px 20px;
-      text-align: center;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-    header p {
-      margin-top: 8px;
-      font-size: 1rem;
-      opacity: 0.95;
-    }
-    main {
-      max-width: 960px;
-      margin: 20px auto;
-      padding: 0 16px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-    }
-    label {
-      display:block;
-      font-weight:600;
-      margin-top: 16px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      font-family: inherit;
-    }
-    input:focus, select:focus {
-      border-color: var(--primary);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(119,66,141,0.15);
-    }
-    button {
-      margin-top: 20px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      font-weight: 600;
-      transition: background 0.3s;
-      cursor: pointer;
-    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(119,66,141,0.15); }
+    button { margin-top: 20px; background: var(--primary); color: white; border: none; font-weight: 600; transition: background 0.3s; cursor: pointer; }
     button:hover { background: var(--primary-dark); }
     button[disabled] { opacity: .7; cursor: not-allowed; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin-top: 24px;
-    }
-    .result-card {
-      background: var(--card);
-      border:1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-    .name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--primary-dark);
-    }
-    .copy {
-      margin-top: 4px;
-      font-style: italic;
-      color: var(--muted);
-    }
-    .story {
-      margin-top: 10px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-    }
-    .meta {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--fg);
-    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
+    .result-card { background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .name { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
+    .copy { margin-top: 4px; font-style: italic; color: var(--muted); }
+    .story { margin-top: 10px; line-height: 1.7; white-space: pre-wrap; }
+    .meta { margin-top: 12px; font-size: 13px; color: var(--fg); }
     .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid var(--border);
-      padding: 6px 8px;
-      text-align: left;
-    }
-    th {
-      background: var(--accent);
-    }
-    .pill {
-      display:inline-block;
-      padding:2px 8px;
-      border-radius:999px;
-      background: var(--accent);
-      font-size:12px;
-      margin-left:6px;
-      color: var(--primary-dark);
-    }
-    footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      padding: 20px;
-    }
-    footer a {
-      color: var(--primary-dark);
-      text-decoration: none;
-      margin: 0 6px;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+    th { background: var(--accent); }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background: var(--accent); font-size:12px; margin-left:6px; color: var(--primary-dark); }
+    footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--muted); padding: 20px; }
+    footer a { color: var(--primary-dark); text-decoration: none; margin: 0 6px; }
     footer a:hover { text-decoration: underline; }
   </style>
 </head>
@@ -187,65 +82,105 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+    const KEY = (p) => `ns-cache::${p.surname}|${p.gender}|${p.concept}`;
 
-    function kakuRow(labelA, objA, labelB, objB) {
-      const aVal = objA?.value ?? "-";
-      const aGrd = objA?.grade ? `<span class="pill">${objA.grade}</span>` : "";
-      const bVal = objB?.value ?? "-";
-      const bGrd = objB?.grade ? `<span class="pill">${objB.grade}</span>` : "";
-      return `<tr><th>${labelA}</th><td>${aVal} ${aGrd}</td><th>${labelB}</th><td>${bVal} ${bGrd}</td></tr>`;
-    }
+    // 値の正規化
+    const getVal = (v) => {
+      if (v === null || v === undefined) return "-";
+      if (typeof v === "number" || typeof v === "string") return v;
+      if (typeof v === "object") {
+        if ("value" in v) return v.value;
+        if ("total" in v) return v.total;
+      }
+      return "-";
+    };
+    const getGrade = (v) => {
+      if (!v) return "";
+      if (typeof v === "string") return v;
+      if (typeof v === "object" && v.grade) return v.grade;
+      return "";
+    };
+    const toLuckObj = (luck) => {
+      if (typeof luck === "string") return { overall: luck, work: "", love: "", health: "" };
+      return {
+        overall: getGrade(luck?.overall) || getVal(luck?.overall),
+        work:    getGrade(luck?.work)    || getVal(luck?.work),
+        love:    getGrade(luck?.love)    || getVal(luck?.love),
+        health:  getGrade(luck?.health)  || getVal(luck?.health),
+      };
+    };
+    const toBreakdownText = (bd) => {
+      if (!bd) return "-";
+      if (Array.isArray(bd)) {
+        return bd.map((item) => {
+          if (Array.isArray(item)) return `${item[0]}:${item[1]}`;
+          if (typeof item === "object") {
+            const k = item.kanji ?? item.k ?? item.char ?? "?";
+            const s = item.count ?? item.stroke ?? item.s ?? item.v ?? "?";
+            return `${k}:${s}`;
+          }
+          return String(item);
+        }).join(" / ");
+      }
+      if (typeof bd === "object") {
+        return Object.entries(bd).map(([k, s]) => `${k}:${s}`).join(" / ");
+      }
+      return String(bd);
+    };
+
+    const kakuRow = (labelA, objA, labelB, objB) => {
+      const aVal = getVal(objA); const aGrd = getGrade(objA);
+      const bVal = getVal(objB); const bGrd = getGrade(objB);
+      return `<tr><th>${labelA}</th><td>${aVal} ${aGrd ? `<span class="pill">${aGrd}</span>` : ""}</td>
+              <th>${labelB}</th><td>${bVal} ${bGrd ? `<span class="pill">${bGrd}</span>` : ""}</td></tr>`;
+    };
 
     function renderCandidates(data) {
-      const wrap = $("results");
-      wrap.innerHTML = "";
+      const wrap = $("results"); wrap.innerHTML = "";
+      const inputSurname = ($("surname").value || "").trim();
 
-      (data.candidates || []).forEach((c) => {
+      (data.candidates || []).forEach((raw) => {
+        const c = JSON.parse(JSON.stringify(raw));
+        if (c.name && inputSurname && !c.name.includes(inputSurname)) {
+          c.name = `${inputSurname} ${c.name}`;
+        }
+
+        const luck = toLuckObj(c.fortune?.luck);
+        const bdText = toBreakdownText(c.strokes?.breakdown);
+
         const div = document.createElement("div");
         div.className = "result-card";
-
-        const bd = Array.isArray(c.strokes?.breakdown)
-          ? c.strokes.breakdown.map(([k,s]) => `${k}:${s}`).join(" / ")
-          : "-";
-
         div.innerHTML = `
           <div class="name">${c.name || ""}</div>
           <div class="meta">${c.reading ? "読み：" + c.reading : ""}</div>
-          <div class="copy">${c.copy || ""}</div>
-          <div class="story">${c.story || ""}</div>
+          <div class="copy">${typeof c.copy === "string" ? c.copy : ""}</div>
+          <div class="story">${typeof c.story === "string" ? c.story : ""}</div>
 
           <div class="meta"><b>姓名判断（推定）</b></div>
-          <div class="table-wrap">
-            <table>
-              ${kakuRow("天格", c.fortune?.tenkaku, "人格", c.fortune?.jinkaku)}
-              ${kakuRow("地格", c.fortune?.chikaku, "外格", c.fortune?.gaikaku)}
-              ${kakuRow("総格", c.fortune?.soukaku, "総合運", { value: "", grade: c.fortune?.luck?.overall })}
-              ${kakuRow("仕事運", { value:"", grade:c.fortune?.luck?.work }, "恋愛運", { value:"", grade:c.fortune?.luck?.love })}
-              ${kakuRow("健康運", { value:"", grade:c.fortune?.luck?.health }, "備考", { value: c.fortune?.note || "", grade:"" })}
-            </table>
-          </div>
+          <div class="table-wrap"><table>
+            ${kakuRow("天格", c.fortune?.tenkaku, "人格", c.fortune?.jinkaku)}
+            ${kakuRow("地格", c.fortune?.chikaku, "外格", c.fortune?.gaikaku)}
+            ${kakuRow("総格", c.fortune?.soukaku, "総合運", luck?.overall)}
+            ${kakuRow("仕事運", luck?.work, "恋愛運", luck?.love)}
+            ${kakuRow("健康運", luck?.health, "備考", c.fortune?.note || "")}
+          </table></div>
 
           <div class="meta"><b>画数診断（推定）</b></div>
-          <div class="table-wrap">
-            <table>
-              <tr><th>姓 合計</th><td>${c.strokes?.surnameTotal ?? "-"}</td><th>名 合計</th><td>${c.strokes?.givenTotal ?? "-"}</td></tr>
-              <tr><th>総画</th><td colspan="3">${c.strokes?.total ?? "-"}</td></tr>
-              <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
-            </table>
-          </div>
-        `;
+          <div class="table-wrap"><table>
+            <tr><th>姓 合計</th><td>${getVal(c.strokes?.surnameTotal)}</td>
+                <th>名 合計</th><td>${getVal(c.strokes?.givenTotal)}</td></tr>
+            <tr><th>総画</th><td colspan="3">${getVal(c.strokes?.total)}</td></tr>
+            <tr><th>内訳</th><td colspan="3">${bdText}</td></tr>
+          </table></div>`;
         wrap.appendChild(div);
       });
-
       wrap.style.display = "grid";
 
       const policyEl = $("policy");
       if (data.policy?.ryuha || data.policy?.notes) {
         policyEl.innerHTML = `<b>流派/計算方針：</b>${data.policy.ryuha || ""}<br>${data.policy.notes || ""}`;
         policyEl.style.display = "block";
-      } else {
-        policyEl.style.display = "none";
-      }
+      } else { policyEl.style.display = "none"; }
     }
 
     $("submit").addEventListener("click", async () => {
@@ -255,21 +190,27 @@
         concept: $("concept").value.trim()
       };
       if (!payload.surname || !payload.concept) {
-        alert("苗字と希望イメージを入力してください。");
-        return;
+        alert("苗字と希望イメージを入力してください。"); return;
       }
+      const cacheKey = KEY(payload);
+      const cached = localStorage.getItem(cacheKey);
+
       $("submit").disabled = true;
       $("submit").textContent = "生成中…";
-
       try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Server error");
-        renderCandidates(data);
+        if (cached) {
+          renderCandidates(JSON.parse(cached));
+        } else {
+          const res = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.message || "Server error");
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          renderCandidates(data);
+        }
         document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (e) {
         console.error(e);
