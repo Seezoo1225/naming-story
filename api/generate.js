@@ -1,104 +1,217 @@
 // api/generate.js
-import OpenAI from "openai";
-
-const MODEL = "gpt-4o-mini";
-
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
+  }
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+    const { surname = "", gender = "unknown", concept = "" } = req.body || {};
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ message: "Missing OPENAI_API_KEY" });
+    }
+    if (!surname || !concept) {
+      return res.status(400).json({ message: "surname and concept are required" });
     }
 
-    const { surname, gender, concept } = req.body ?? {};
-    // 入力ガード（過度な長文や空欄を弾く）
-    const s = (surname || "").trim().slice(0, 16);
-    const g = (gender || "unknown").toLowerCase();
-    const c = (concept || "").trim().slice(0, 60);
-    if (!s || !c) return res.status(400).json({ error: "surname_and_concept_required" });
+    // ---------- PROMPT ----------
+    const system = `
+あなたは現代的な日本のネーミング/姓名判断の専門家です。
+必ず **JSONのみ** を返してください。前後に説明文は書かないでください。
+流派は「五格法（新字体・霊数なし）」を採用してください。
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+返却フォーマット（厳守）:
+{
+  "candidates": [
+    {
+      "name": "山田 未来基",
+      "reading": "みらいもと",
+      "copy": "未来を築く、基盤を作る。",
+      "story": "現代的で前向きな短い物語（日本語・2〜4文）",
+      "strokes": {
+        "surname": { "total": 8, "breakdown": [["山",3],["田",5]] },
+        "given":   { "total": 12, "breakdown": [["未",5],["来",7]] },
+        "total": 20
+      },
+      "fortune": {
+        "tenkaku": 8,
+        "jinkaku": 10,
+        "chikaku": 12,
+        "gaikaku": 10,
+        "soukaku": 20,
+        "luck": { "overall":"吉", "work":"吉", "love":"中吉", "health":"吉" },
+        "note": "簡単な補足（任意）"
+      }
+    }
+  ],
+  "policy": {
+    "ryuha":"五格法（新字体・霊数なし）",
+    "notes":"現代的かつポジティブなニュアンスを重視。"
+  }
+}
 
-    const system = `あなたは現代的なネーミングコピーライター兼ライトな姓名判断アナリストです。出力は必ず日本語。マークダウン禁止。JSONのみで返すこと。
-要件:
-- 3件の候補を生成（性別: ${g} / unknownは中性）。
-- 各候補は {name, reading, copy, story, fortune{...}, strokes{...}} とする。
-- fortune は各格に value(整数) と grade(大吉/吉/中吉/小吉/凶/大凶) を付与。luckのoverall/work/love/healthも同表記。
-- strokes は姓・名・総画と内訳（[漢字, 数]の配列）。数値は可能な範囲で一貫させる。
-- 占い口調は禁止。現代的・簡潔・ポジティブ。
-- 全て日本語で。英語は使わない。
-返却JSONの最上位は { "candidates":[...3件...], "policy":{ "ryuha": "...", "notes": "..." } } のみ。`;
+制約:
+- name は漢字の下の名を3候補作る（苗字は入力値）。苗字を必ず name の先頭に付ける。
+- 読みはひらがな（姓は省略可）。
+- strokes.breakdown は [["漢字", 画数], ...] で、姓→名の順。
+- 数値は整数、luckは「大吉/中吉/吉/小吉/凶/大凶」など短い日本語。
+- 話し言葉や余計な文字は入れない（JSON以外の出力禁止）。
+    `.trim();
 
-    const user = `姓: ${s}
-性別: ${g}
-希望イメージ: ${c}
-厳密なJSONのみで返してください。`;
+    const user = `
+苗字: ${surname}
+性別: ${gender}
+希望イメージ: ${concept}
 
-    // リトライ付きの呼び出し
-    const call = async (attempt = 1) => {
-      try {
-        const r = await openai.responses.create({
-          model: MODEL,
-          input: [
-            { role: "system", content: system },
-            { role: "user", content: user }
-          ]
-        });
-        return r;
-      } catch (e) {
-        // 429/5xxは最大3回までリトライ
-        if ((e?.status === 429 || (e?.status >= 500 && e?.status < 600)) && attempt < 3) {
-          await new Promise(r => setTimeout(r, 600 * attempt)); // 0.6s, 1.2s
-          return call(attempt + 1);
-        }
-        throw e;
+条件:
+- 現代的で読みやすい漢字を優先
+- 漢字は常用漢字中心
+- 候補は3つ
+`.trim();
+
+    // ---------- CALL OPENAI ----------
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" }, // JSONを強制
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      console.error("[openai-error]", data);
+      return res.status(resp.status).json({ message: data?.error?.message || "OpenAI error" });
+    }
+
+    let content = data?.choices?.[0]?.message?.content || "{}";
+
+    // ---------- JSONパース（万一壊れてたら抽出リカバリ） ----------
+    let raw;
+    try {
+      raw = JSON.parse(content);
+    } catch {
+      const m = content.match(/{[\s\S]*}/);
+      raw = m ? JSON.parse(m[0]) : {};
+    }
+
+    // ---------- 正規化 + 五格補完 ----------
+    const output = normalizeAndFill(raw, surname);
+
+    return res.status(200).json(output);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+/** 値→数値化 */
+function num(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") return v|0;
+  if (typeof v === "string") return (Number(v) || 0)|0;
+  if (typeof v === "object") {
+    if ("value" in v) return num(v.value);
+    if ("total" in v) return num(v.total);
+  }
+  return 0;
+}
+
+/** breakdown を [{char,count}] に */
+function normBD(bd) {
+  if (!bd) return [];
+  if (Array.isArray(bd)) {
+    return bd.map(x => Array.isArray(x)
+      ? { char: String(x[0]), count: num(x[1]) }
+      : { char: String(x.kanji || x.char || x.k || "?"), count: num(x.count || x.stroke || x.s || x.v) }
+    );
+  }
+  if (typeof bd === "object") {
+    return Object.entries(bd).map(([k,v]) => ({ char: String(k), count: num(v) }));
+  }
+  return [];
+}
+
+/** 五格計算（新字体・霊数なし） */
+function calcGokaku(surname, bdAll, sTotal, gTotal, totalAll) {
+  const sLen = [...(surname || "")].length;
+  const surnameParts = bdAll.slice(0, sLen);
+  const givenParts   = bdAll.slice(sLen);
+  const sum = (arr) => arr.reduce((a,b)=>a+(b.count||0), 0);
+  const tenkaku = sTotal || sum(surnameParts);
+  const chikaku = gTotal || sum(givenParts);
+  const soukaku = totalAll || (tenkaku + chikaku);
+  const jinkaku = (surnameParts[surnameParts.length-1]?.count || 0) + (givenParts[0]?.count || 0);
+  const gaikaku = (soukaku && jinkaku) ? (soukaku - jinkaku) : 0;
+  return { tenkaku, jinkaku, chikaku, gaikaku, soukaku };
+}
+
+/** API応答をフロント期待形に正規化＆補完 */
+function normalizeAndFill(payload, surname) {
+  const arr = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  const candidates = arr.slice(0,3).map(c => {
+    // 名前
+    const fullName = (c.name || "").includes(surname) ? c.name : `${surname} ${c.name || ""}`.trim();
+
+    // strokes
+    const sT = num(c?.strokes?.surname?.total);
+    const gT = num(c?.strokes?.given?.total);
+    const tT = num(c?.strokes?.total);
+    const bdSurname = normBD(c?.strokes?.surname?.breakdown);
+    const bdGiven   = normBD(c?.strokes?.given?.breakdown);
+    const bdAll     = [...bdSurname, ...bdGiven];
+
+    // 五格（欠けていれば計算で補完）
+    const gk = calcGokaku(surname, bdAll, sT, gT, tT);
+
+    // 返却
+    return {
+      name: fullName,
+      reading: String(c.reading || ""),
+      copy: String(c.copy || ""),
+      story: String(c.story || ""),
+      strokes: {
+        surnameTotal: sT || (bdSurname.reduce((a,b)=>a+b.count,0) || undefined),
+        givenTotal:   gT || (bdGiven.reduce((a,b)=>a+b.count,0)   || undefined),
+        total:        tT || (sT + gT || undefined),
+        breakdown:    bdAll
+      },
+      fortune: {
+        tenkaku: { value: num(c?.fortune?.tenkaku) || gk.tenkaku || undefined },
+        jinkaku: { value: num(c?.fortune?.jinkaku) || gk.jinkaku || undefined },
+        chikaku: { value: num(c?.fortune?.chikaku) || gk.chikaku || undefined },
+        gaikaku: { value: num(c?.fortune?.gaikaku) || gk.gaikaku || undefined },
+        soukaku: { value: num(c?.fortune?.soukaku) || gk.soukaku || undefined },
+        luck: {
+          overall: pickStr(c?.fortune?.luck?.overall),
+          work:    pickStr(c?.fortune?.luck?.work),
+          love:    pickStr(c?.fortune?.luck?.love),
+          health:  pickStr(c?.fortune?.luck?.health),
+        },
+        note: String(c?.fortune?.note || "")
       }
     };
+  });
 
-    const response = await call();
-    const text = response.output_text || "";
-    let json;
-    try {
-      json = JSON.parse(text);
-      if (!json || !Array.isArray(json.candidates)) throw new Error("invalid_json_shape");
-      json.candidates = json.candidates.slice(0, 3);
-      json.policy = json.policy || {
-        ryuha: "五格法（新字体／霊数なし／人格=姓末+名頭）",
-        notes: "辞書非搭載のため画数は推定。旧字体・流派差で変動の可能性。"
-      };
-    } catch {
-      json = {
-        candidates: [
-          {
-            name: `${s} ネオ`,
-            reading: "",
-            copy: "シンプルで力強い名前。",
-            story: "覚えやすく現代的。静かな芯の強さを感じさせます。",
-            fortune: {
-              tenkaku: { value: 0, grade: "中吉" },
-              jinkaku: { value: 0, grade: "吉" },
-              chikaku: { value: 0, grade: "吉" },
-              gaikaku: { value: 0, grade: "吉" },
-              soukaku: { value: 0, grade: "中吉" },
-              luck: { overall: "中吉", work: "吉", love: "吉", health: "吉" },
-              note: "自動生成のため概算です（流派により差があります）。"
-            },
-            strokes: { surnameTotal: 0, givenTotal: 0, total: 0, breakdown: [] }
-          }
-        ],
-        policy: {
-          ryuha: "五格法（新字体／霊数なし／人格=姓末+名頭）",
-          notes: "辞書非搭載のため画数は推定です。"
-        }
-      };
+  return {
+    candidates,
+    policy: payload?.policy || {
+      ryuha: "五格法（新字体・霊数なし）",
+      notes: "AIの推定に基づく簡易計算です。"
     }
+  };
+}
 
-    return res.status(200).json(json);
-  } catch (err) {
-    console.error("OPENAI ERROR:", err?.status, err?.message);
-    return res.status(500).json({
-      error: "generation_failed",
-      status: err?.status || null,
-      message: err?.message || null
-    });
-  }
+function pickStr(v) {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "object") return v.grade || v.label || "";
+  return String(v);
 }
