@@ -13,48 +13,47 @@ export default async function handler(req, res) {
     }
 
     // ---------- PROMPT ----------
-    const system = `
+const system = `
 あなたは現代的な日本のネーミング/姓名判断の専門家です。
-必ず **JSONのみ** を返してください。前後に説明文は書かないでください。
-流派は「五格法（新字体・霊数なし）」を採用してください。
+必ず JSON のみを返してください。文章や説明は不要です。
 
-返却フォーマット（厳守）:
+返却フォーマット:
 {
   "candidates": [
     {
-      "name": "山田 未来基",
-      "reading": "みらいもと",
-      "copy": "未来を築く、基盤を作る。",
-      "story": "現代的で前向きな短い物語（日本語・2〜4文）",
+      "name": "山田 太志",
+      "reading": "たいし",
+      "copy": "大きな志を抱いて",
+      "story": "2〜4文の物語（日本語）",
       "strokes": {
         "surname": { "total": 8, "breakdown": [["山",3],["田",5]] },
-        "given":   { "total": 12, "breakdown": [["未",5],["来",7]] },
-        "total": 20
+        "given":   { "total": 7, "breakdown": [["太",4],["志",3]] },
+        "total": 15
       },
       "fortune": {
         "tenkaku": 8,
-        "jinkaku": 10,
-        "chikaku": 12,
-        "gaikaku": 10,
-        "soukaku": 20,
-        "luck": { "overall":"吉", "work":"吉", "love":"中吉", "health":"吉" },
-        "note": "簡単な補足（任意）"
+        "jinkaku": 9,
+        "chikaku": 7,
+        "gaikaku": 6,
+        "soukaku": 15,
+        "luck": { "overall":"吉", "work":"大吉", "love":"中吉", "health":"吉" },
+        "note": "補足（任意）"
       }
     }
   ],
   "policy": {
     "ryuha":"五格法（新字体・霊数なし）",
-    "notes":"現代的かつポジティブなニュアンスを重視。"
+    "notes":"現代的かつポジティブなニュアンスを重視"
   }
 }
 
 制約:
-- name は漢字の下の名を3候補作る（苗字は入力値）。苗字を必ず name の先頭に付ける。
-- 読みはひらがな（姓は省略可）。
-- strokes.breakdown は [["漢字", 画数], ...] で、姓→名の順。
-- 数値は整数、luckは「大吉/中吉/吉/小吉/凶/大凶」など短い日本語。
-- 話し言葉や余計な文字は入れない（JSON以外の出力禁止）。
-    `.trim();
+- 候補は必ず3つ。
+- 苗字（入力値）を必ず先頭に付ける。
+- strokes.breakdown は姓→名の順ですべての漢字を必ず列挙。
+- fortune.tenkaku など五格は必ず整数で返す。
+- JSON 以外の出力は厳禁。
+`.trim();
 
     const user = `
 苗字: ${surname}
