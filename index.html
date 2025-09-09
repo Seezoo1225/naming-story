@@ -1,0 +1,139 @@
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // breakdown を [{char, count}] 形式にそろえる
+  const normalizeBreakdown = (bd) => {
+    if (!bd) return [];
+    if (Array.isArray(bd)) {
+      return bd.map(item => {
+        if (Array.isArray(item)) return { char: item[0], count: Number(item[1]) || 0 };
+        if (typeof item === "object") {
+          const ch = item.kanji ?? item.char ?? item.k ?? "?";
+          const ct = Number(item.count ?? item.stroke ?? item.s ?? 0);
+          return { char: ch, count: ct };
+        }
+        return { char: String(item), count: 0 };
+      });
+    }
+    if (typeof bd === "object") {
+      return Object.entries(bd).map(([k,v]) => ({ char:k, count:Number(v)||0 }));
+    }
+    return [];
+  };
+
+  // 五格計算
+  function calcGokaku(surname, breakdown) {
+    const chars = normalizeBreakdown(breakdown);
+    const sLen = [...surname].length;
+    const surnameParts = chars.slice(0, sLen);
+    const givenParts   = chars.slice(sLen);
+
+    const sum = (arr) => arr.reduce((a,b)=>a+(b.count||0),0);
+
+    const tenkaku = sum(surnameParts);
+    const chikaku = sum(givenParts);
+    const soukaku = tenkaku + chikaku;
+    const jinkaku = (surnameParts[surnameParts.length-1]?.count||0) + (givenParts[0]?.count||0);
+    const gaikaku = soukaku - jinkaku;
+
+    return { tenkaku, jinkaku, chikaku, gaikaku, soukaku };
+  }
+
+  const safeVal = (v) => (v===null||v===undefined||v==="") ? "-" : v;
+
+  const kakuRow = (labelA, vA, labelB, vB) => {
+    return `<tr><th>${labelA}</th><td>${safeVal(vA)}</td><th>${labelB}</th><td>${safeVal(vB)}</td></tr>`;
+  };
+
+  function renderCandidates(data) {
+    const wrap = $("results");
+    wrap.innerHTML = "";
+
+    const inputSurname = ($("surname").value||"").trim();
+
+    (data.candidates || []).forEach((c) => {
+      // 姓補完
+      if (c.name && inputSurname && !c.name.includes(inputSurname)) {
+        c.name = inputSurname + " " + c.name;
+      }
+
+      const gokaku = calcGokaku(inputSurname, c.strokes?.breakdown);
+
+      const bd = normalizeBreakdown(c.strokes?.breakdown)
+        .map(x=>`${x.char}:${x.count}`).join(" / ") || "-";
+
+      const div = document.createElement("div");
+      div.className = "result-card";
+      div.innerHTML = `
+        <div class="name">${c.name||""}</div>
+        <div class="meta">${c.reading ? "読み：" + c.reading : ""}</div>
+        <div class="copy">${c.copy||""}</div>
+        <div class="story">${c.story||""}</div>
+
+        <div class="meta"><b>姓名判断（推定）</b></div>
+        <div class="table-wrap">
+          <table>
+            ${kakuRow("天格", gokaku.tenkaku, "人格", gokaku.jinkaku)}
+            ${kakuRow("地格", gokaku.chikaku, "外格", gokaku.gaikaku)}
+            ${kakuRow("総格", gokaku.soukaku, "総合運", c.fortune?.luck?.overall)}
+            ${kakuRow("仕事運", c.fortune?.luck?.work, "恋愛運", c.fortune?.luck?.love)}
+            ${kakuRow("健康運", c.fortune?.luck?.health, "備考", c.fortune?.note)}
+          </table>
+        </div>
+
+        <div class="meta"><b>画数診断（推定）</b></div>
+        <div class="table-wrap">
+          <table>
+            <tr><th>姓 合計</th><td>${safeVal(c.strokes?.surnameTotal)}</td>
+                <th>名 合計</th><td>${safeVal(c.strokes?.givenTotal)}</td></tr>
+            <tr><th>総画</th><td colspan="3">${safeVal(c.strokes?.total)}</td></tr>
+            <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
+          </table>
+        </div>
+      `;
+      wrap.appendChild(div);
+    });
+
+    wrap.style.display = "grid";
+
+    const policyEl = $("policy");
+    if (data.policy?.ryuha || data.policy?.notes) {
+      policyEl.innerHTML = `<b>流派/計算方針：</b>${data.policy.ryuha||""}<br>${data.policy.notes||""}`;
+      policyEl.style.display = "block";
+    } else {
+      policyEl.style.display = "none";
+    }
+  }
+
+  $("submit").addEventListener("click", async () => {
+    const payload = {
+      surname: $("surname").value.trim(),
+      gender: $("gender").value,
+      concept: $("concept").value.trim()
+    };
+    if (!payload.surname || !payload.concept) {
+      alert("苗字と希望イメージを入力してください。"); return;
+    }
+
+    $("submit").disabled = true;
+    $("submit").textContent = "生成中…";
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Server error");
+      renderCandidates(data);
+      document.getElementById("results").scrollIntoView({ behavior:"smooth", block:"start" });
+    } catch(e) {
+      console.error(e);
+      alert("生成に失敗しました。");
+    } finally {
+      $("submit").disabled = false;
+      $("submit").textContent = "無料で診断する";
+    }
+  });
+</script>
