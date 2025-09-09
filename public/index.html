@@ -8,27 +8,46 @@
   <meta name="description" content="AI × STORY × 姓名判断。苗字・性別・イメージから、現代的な“名前の物語”を3候補でご提案。">
   <style>
     :root {
-      --bg: #f9f9fb; --fg: #2e2a2f; --card: #ffffff; --muted: #6b6270;
-      --primary: #77428D;   /* 江戸紫 */ --primary-dark: #5d2f6e;
-      --accent: #ede6f3; --border: #e2dce8;
+      --bg: #f9f9fb;
+      --fg: #2e2a2f;
+      --card: #ffffff;
+      --muted: #6b6270;
+      --primary: #77428D;   /* 江戸紫 */
+      --primary-dark: #5d2f6e;
+      --accent: #ede6f3;
+      --border: #e2dce8;
     }
     body { font-family: 'Noto Sans JP', sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
-    header { background: var(--primary); color: #fff; padding: 32px 20px; text-align: center; }
+    header { background: var(--primary); color: white; padding: 32px 20px; text-align: center; }
     header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
-    header p { margin-top: 8px; font-size: 1rem; opacity: .95; }
+    header p { margin-top: 8px; font-size: 1rem; opacity: 0.95; }
     main { max-width: 960px; margin: 20px auto; padding: 0 16px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,.04); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
     label { display:block; font-weight:600; margin-top: 16px; }
-    input, select, button, textarea {
+    input, select, button {
       width: 100%; padding: 12px; margin-top: 8px; border: 1px solid var(--border);
       border-radius: 8px; font-size: 16px; font-family: inherit;
     }
-    input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(119,66,141,.15); }
-    button { margin-top: 20px; background: var(--primary); color: #fff; border: none; font-weight: 600; transition: background .3s; cursor: pointer; }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      outline: none; box-shadow: 0 0 0 3px rgba(119,66,141,0.15);
+    }
+    button {
+      margin-top: 20px; background: var(--primary); color: white;
+      border: none; font-weight: 600; transition: background 0.3s; cursor: pointer;
+    }
     button:hover { background: var(--primary-dark); }
     button[disabled] { opacity: .7; cursor: not-allowed; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
-    .result-card { background: var(--card); border:1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px; margin-top: 24px;
+    }
+    .result-card {
+      background: var(--card); border:1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
     .name { font-size: 20px; font-weight: 700; color: var(--primary-dark); }
     .copy { margin-top: 4px; font-style: italic; color: var(--muted); }
     .story { margin-top: 10px; line-height: 1.7; white-space: pre-wrap; }
@@ -37,7 +56,8 @@
     table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
     th, td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
     th { background: var(--accent); }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background: var(--accent); font-size:12px; margin-left:6px; color: var(--primary-dark); }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px;
+      background: var(--accent); font-size:12px; margin-left:6px; color: var(--primary-dark); }
     footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--muted); padding: 20px; }
     footer a { color: var(--primary-dark); text-decoration: none; margin: 0 6px; }
     footer a:hover { text-decoration: underline; }
@@ -77,156 +97,55 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const KEY = (p) => `ns-cache::${p.surname}|${p.gender}|${p.concept}`;
 
-    // 値の正規化
-    const getVal = (v) => {
-      if (v === null || v === undefined) return "-";
-      if (typeof v === "number" || typeof v === "string") return v;
-      if (typeof v === "object") { if ("value" in v) return v.value; if ("total" in v) return v.total; }
-      return "-";
-    };
-    const getGrade = (v) => {
-      if (!v) return "";
-      if (typeof v === "string") return v;
-      if (typeof v === "object" && v.grade) return v.grade;
-      return "";
-    };
-
-    // breakdown を標準化 [{char, count}] に揃える
-    const normalizeBreakdown = (bd) => {
-      if (!bd) return [];
-      if (Array.isArray(bd)) {
-        return bd.map(item => {
-          if (Array.isArray(item)) return { char: item[0], count: Number(item[1]) || 0 };
-          if (typeof item === "object") {
-            const ch = item.kanji ?? item.k ?? item.char ?? item.c ?? "";
-            const ct = Number(item.count ?? item.stroke ?? item.s ?? item.v ?? 0);
-            return { char: ch, count: ct };
-          }
-          return { char: String(item), count: 0 };
-        });
-      }
-      if (typeof bd === "object") {
-        return Object.entries(bd).map(([k, v]) => ({ char: k, count: Number(v) || 0 }));
-      }
-      return [];
-    };
-
-    // 五格を可能な限り算出（五格法／新字体／霊数なし／人格=姓末+名頭）
-    function computeGokaku(inputSurname, nameText, breakdown, strokes) {
-      const chars = normalizeBreakdown(breakdown);
-      const result = {
-        tenkaku: { value: getVal(strokes?.surnameTotal), grade: getGrade(strokes?.tenkaku) },
-        jinkaku: { value: getVal(strokes?.jinkaku), grade: getGrade(strokes?.jinkaku) },
-        chikaku: { value: getVal(strokes?.givenTotal), grade: getGrade(strokes?.chikaku) },
-        gaikaku: { value: getVal(strokes?.gaikaku), grade: getGrade(strokes?.gaikaku) },
-        soukaku: { value: getVal(strokes?.total), grade: getGrade(strokes?.soukaku) },
-      };
-
-      // 既に数値が埋まっていれば尊重
-      const has = (x) => typeof x?.value === "number";
-
-      // 入力の姓の長さで姓パートを推定
-      const surname = (inputSurname || "").trim();
-      const sLen = [...surname].length; // 2文字姓にも対応
-      const surnameParts = chars.slice(0, sLen);
-      const givenParts   = chars.slice(sLen);
-
-      const sum = (arr) => arr.reduce((a, b) => a + (Number(b.count) || 0), 0);
-
-      if (!has(result.tenkaku)) result.tenkaku.value = sum(surnameParts) || Number(strokes?.surnameTotal) || "-";
-      if (!has(result.chikaku)) result.chikaku.value = sum(givenParts)   || Number(strokes?.givenTotal) || "-";
-      if (!has(result.soukaku)) {
-        const tot = Number(strokes?.total);
-        result.soukaku.value = (!isNaN(tot) && tot>0) ? tot : (Number(result.tenkaku.value)||0) + (Number(result.chikaku.value)||0);
-        if (result.soukaku.value === 0) result.soukaku.value = "-";
-      }
-      if (!has(result.jinkaku)) {
-        const left  = surnameParts[surnameParts.length-1]?.count || 0; // 姓の末字
-        const right = givenParts[0]?.count || 0;                     // 名の頭
-        const v = left + right;
-        result.jinkaku.value = v || "-";
-      }
-      if (!has(result.gaikaku)) {
-        const sv = Number(result.soukaku.value)||0;
-        const jv = Number(result.jinkaku.value)||0;
-        result.gaikaku.value = (sv && jv) ? (sv - jv) : "-";
-      }
-
-      return result;
+    function kakuRow(labelA, objA, labelB, objB) {
+      const aVal = (objA && (objA.value ?? objA)) ?? "-";
+      const aGrd = (objA && objA.grade) ? `<span class="pill">${objA.grade}</span>` : "";
+      const bVal = (objB && (objB.value ?? objB)) ?? "-";
+      const bGrd = (objB && objB.grade) ? `<span class="pill">${objB.grade}</span>` : "";
+      return `<tr><th>${labelA}</th><td>${aVal} ${aGrd}</td><th>${labelB}</th><td>${bVal} ${bGrd}</td></tr>`;
     }
 
-    const toLuckObj = (luck) => {
-      if (typeof luck === "string") return { overall: luck, work: "", love: "", health: "" };
-      return {
-        overall: getGrade(luck?.overall) || getVal(luck?.overall),
-        work:    getGrade(luck?.work)    || getVal(luck?.work),
-        love:    getGrade(luck?.love)    || getVal(luck?.love),
-        health:  getGrade(luck?.health)  || getVal(luck?.health),
-      };
-    };
-
-    const toBreakdownText = (bd) => {
-      const arr = normalizeBreakdown(bd);
-      return arr.length ? arr.map(x => `${x.char}:${x.count}`).join(" / ") : "-";
-    };
-
-    const kakuRow = (labelA, objA, labelB, objB) => {
-      const aVal = getVal(objA); const aGrd = getGrade(objA);
-      const bVal = getVal(objB); const bGrd = getGrade(objB);
-      return `<tr><th>${labelA}</th><td>${aVal} ${aGrd ? `<span class="pill">${aGrd}</span>` : ""}</td>
-              <th>${labelB}</th><td>${bVal} ${bGrd ? `<span class="pill">${bGrd}</span>` : ""}</td></tr>`;
-    };
-
     function renderCandidates(data) {
-      const wrap = $("results"); wrap.innerHTML = "";
-      const inputSurname = ($("surname").value || "").trim();
+      const wrap = $("results");
+      wrap.innerHTML = "";
 
-      (data.candidates || []).forEach((raw) => {
-        const c = JSON.parse(JSON.stringify(raw)); // 破壊防止
-        // 姓が付いていない場合は補完
-        if (c.name && inputSurname && !c.name.includes(inputSurname)) c.name = `${inputSurname} ${c.name}`;
-
-        // 五格自動補完
-        const gokaku = computeGokaku(inputSurname, c.name, c.strokes?.breakdown, {
-          surnameTotal: c.strokes?.surnameTotal,
-          givenTotal:   c.strokes?.givenTotal,
-          total:        c.strokes?.total,
-          tenkaku:      c.fortune?.tenkaku,
-          jinkaku:      c.fortune?.jinkaku,
-          chikaku:      c.fortune?.chikaku,
-          gaikaku:      c.fortune?.gaikaku,
-          soukaku:      c.fortune?.soukaku
-        });
-
-        const luck  = toLuckObj(c.fortune?.luck);
-        const bdTxt = toBreakdownText(c.strokes?.breakdown);
-
+      (data.candidates || []).forEach((c) => {
         const div = document.createElement("div");
         div.className = "result-card";
+
+        const bd = Array.isArray(c.strokes?.breakdown)
+          ? c.strokes.breakdown.map(([k,s]) => `${k}:${s}`).join(" / ")
+          : (typeof c.strokes?.breakdown === "object" && c.strokes?.breakdown)
+            ? Object.entries(c.strokes.breakdown).map(([k,v])=>`${k}:${v}`).join(" / ")
+            : "-";
+
         div.innerHTML = `
           <div class="name">${c.name || ""}</div>
           <div class="meta">${c.reading ? "読み：" + c.reading : ""}</div>
-          <div class="copy">${typeof c.copy === "string" ? c.copy : ""}</div>
-          <div class="story">${typeof c.story === "string" ? c.story : ""}</div>
+          <div class="copy">${c.copy || ""}</div>
+          <div class="story">${c.story || ""}</div>
 
           <div class="meta"><b>姓名判断（推定）</b></div>
-          <div class="table-wrap"><table>
-            ${kakuRow("天格", gokaku.tenkaku, "人格", gokaku.jinkaku)}
-            ${kakuRow("地格", gokaku.chikaku, "外格", gokaku.gaikaku)}
-            ${kakuRow("総格", gokaku.soukaku, "総合運", luck?.overall)}
-            ${kakuRow("仕事運", luck?.work, "恋愛運", luck?.love)}
-            ${kakuRow("健康運", luck?.health, "備考", c.fortune?.note || "")}
-          </table></div>
+          <div class="table-wrap">
+            <table>
+              ${kakuRow("天格", c.fortune?.tenkaku, "人格", c.fortune?.jinkaku)}
+              ${kakuRow("地格", c.fortune?.chikaku, "外格", c.fortune?.gaikaku)}
+              ${kakuRow("総格", c.fortune?.soukaku, "総合運", { value: "", grade: c.fortune?.luck?.overall })}
+              ${kakuRow("仕事運", { value:"", grade:c.fortune?.luck?.work }, "恋愛運", { value:"", grade:c.fortune?.luck?.love })}
+              ${kakuRow("健康運", { value:"", grade:c.fortune?.luck?.health }, "備考", { value: c.fortune?.note || "", grade:"" })}
+            </table>
+          </div>
 
           <div class="meta"><b>画数診断（推定）</b></div>
-          <div class="table-wrap"><table>
-            <tr><th>姓 合計</th><td>${getVal(c.strokes?.surnameTotal)}</td>
-                <th>名 合計</th><td>${getVal(c.strokes?.givenTotal)}</td></tr>
-            <tr><th>総画</th><td colspan="3">${getVal(c.strokes?.total)}</td></tr>
-            <tr><th>内訳</th><td colspan="3">${bdTxt}</td></tr>
-          </table></div>`;
+          <div class="table-wrap">
+            <table>
+              <tr><th>姓 合計</th><td>${c.strokes?.surnameTotal ?? "-"}</td><th>名 合計</th><td>${c.strokes?.givenTotal ?? "-"}</td></tr>
+              <tr><th>総画</th><td colspan="3">${c.strokes?.total ?? "-"}</td></tr>
+              <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
+            </table>
+          </div>
+        `;
         wrap.appendChild(div);
       });
 
@@ -236,7 +155,9 @@
       if (data.policy?.ryuha || data.policy?.notes) {
         policyEl.innerHTML = `<b>流派/計算方針：</b>${data.policy.ryuha || ""}<br>${data.policy.notes || ""}`;
         policyEl.style.display = "block";
-      } else { policyEl.style.display = "none"; }
+      } else {
+        policyEl.style.display = "none";
+      }
     }
 
     $("submit").addEventListener("click", async () => {
@@ -245,27 +166,22 @@
         gender: $("gender").value,
         concept: $("concept").value.trim()
       };
-      if (!payload.surname || !payload.concept) { alert("苗字と希望イメージを入力してください。"); return; }
-
-      const cacheKey = KEY(payload);
-      const cached = localStorage.getItem(cacheKey);
-
+      if (!payload.surname || !payload.concept) {
+        alert("苗字と希望イメージを入力してください。");
+        return;
+      }
       $("submit").disabled = true;
       $("submit").textContent = "生成中…";
+
       try {
-        if (cached) {
-          renderCandidates(JSON.parse(cached));
-        } else {
-          const res = await fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data?.message || "Server error");
-          localStorage.setItem(cacheKey, JSON.stringify(data));
-          renderCandidates(data);
-        }
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || "Server error");
+        renderCandidates(data);
         document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (e) {
         console.error(e);
