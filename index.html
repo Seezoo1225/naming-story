@@ -124,6 +124,7 @@
       try{
         const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
         const data=await r.json(); if(!r.ok) throw new Error(data?.message||"Server error");
+console.log("[/api/generate response]", data);
         render(data);
         $("results").scrollIntoView({behavior:"smooth",block:"start"});
       }catch(e){ console.error(e); alert("生成に失敗しました。"); }
