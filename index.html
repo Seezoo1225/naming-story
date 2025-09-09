@@ -69,67 +69,175 @@
     © Your Story Naming ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシー</a>
   </footer>
 
-  <script>
-    const $ = (id)=>document.getElementById(id);
-    const safeVal = (v)=> (v===null||v===undefined||v==="") ? "-" : (typeof v==="object" ? (("value" in v)?v.value:("total" in v?v.total:JSON.stringify(v))) : v);
-    const row = (a,va,b,vb)=>{
-      const gA=(va&&va.grade)?`<span class="pill">${va.grade}</span>`:"";
-      const gB=(vb&&vb.grade)?`<span class="pill">${vb.grade}</span>`:"";
-      return `<tr><th>${a}</th><td>${safeVal(va)} ${gA}</td><th>${b}</th><td>${safeVal(vb)} ${gB}</td></tr>`;
-    };
+<script>
+  const $ = (id) => document.getElementById(id);
 
-    function render(data){
-      const wrap=$("results"); wrap.innerHTML="";
-      (data.candidates||[]).forEach(c=>{
-        const bd = Array.isArray(c.strokes?.breakdown)
-          ? c.strokes.breakdown.map(([k,s])=>`${k}:${s}`).join(" / ")
-          : (typeof c.strokes?.breakdown==="object" && c.strokes?.breakdown)
-            ? Object.entries(c.strokes.breakdown).map(([k,v])=>`${k}:${v}`).join(" / ")
-            : "-";
-        const d=document.createElement("div"); d.className="result-card";
-        d.innerHTML=`
-          <div class="name">${c.name||""}</div>
-          <div class="meta">${c.reading?`読み：${c.reading}`:""}</div>
-          <div class="copy">${c.copy||""}</div>
-          <div class="story">${c.story||""}</div>
-          <div class="meta"><b>姓名判断（推定）</b></div>
-          <div class="table-wrap"><table>
-            ${row("天格",c.fortune?.tenkaku,"人格",c.fortune?.jinkaku)}
-            ${row("地格",c.fortune?.chikaku,"外格",c.fortune?.gaikaku)}
-            ${row("総格",c.fortune?.soukaku,"総合運",{grade:c.fortune?.luck?.overall})}
-            ${row("仕事運",{grade:c.fortune?.luck?.work},"恋愛運",{grade:c.fortune?.luck?.love})}
-            ${row("健康運",{grade:c.fortune?.luck?.health},"備考",{value:c.fortune?.note||""})}
-          </table></div>
-          <div class="meta"><b>画数診断（推定）</b></div>
-          <div class="table-wrap"><table>
-            <tr><th>姓 合計</th><td>${safeVal(c.strokes?.surnameTotal)}</td><th>名 合計</th><td>${safeVal(c.strokes?.givenTotal)}</td></tr>
-            <tr><th>総画</th><td colspan="3">${safeVal(c.strokes?.total)}</td></tr>
-            <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
-          </table></div>`;
-        wrap.appendChild(d);
-      });
-      wrap.style.display="grid";
-
-      const p=$("policy");
-      if(data.policy?.ryuha||data.policy?.notes){
-        p.innerHTML=`<b>流派/計算方針：</b>${data.policy.ryuha||""}<br>${data.policy.notes||""}`;
-        p.style.display="block";
-      } else { p.style.display="none"; }
+  // --- Utils ---
+  const num = (v) => {
+    if (v == null) return 0;
+    if (typeof v === "number") return v;
+    if (typeof v === "string") return Number(v) || 0;
+    if (typeof v === "object") {
+      if ("value" in v) return num(v.value);
+      if ("total" in v) return num(v.total);
     }
+    return 0;
+  };
+  const pickStr = (v) => typeof v === "string" ? v : (v && v.label) ? v.label : (v && v.grade) ? v.grade : "";
 
-    $("submit").addEventListener("click", async ()=>{
-      const payload={surname:$("surname").value.trim(),gender:$("gender").value,concept:$("concept").value.trim()};
-      if(!payload.surname||!payload.concept){ alert("苗字と希望イメージを入力してください。"); return; }
-      $("submit").disabled=true; $("submit").textContent="生成中…";
-      try{
-        const r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-        const data=await r.json(); if(!r.ok) throw new Error(data?.message||"Server error");
-console.log("[/api/generate response]", data);
-        render(data);
-        $("results").scrollIntoView({behavior:"smooth",block:"start"});
-      }catch(e){ console.error(e); alert("生成に失敗しました。"); }
-      finally{ $("submit").disabled=false; $("submit").textContent="無料で診断する"; }
+  // breakdown を [{char,count}] に揃える
+  const normBD = (bd) => {
+    if (!bd) return [];
+    if (Array.isArray(bd)) {
+      return bd.map(x=>{
+        if (Array.isArray(x)) return {char:String(x[0]), count:num(x[1])};
+        if (typeof x === "object") return {char: String(x.kanji||x.char||x.k||"?"), count: num(x.count||x.stroke||x.s||x.v)};
+        return {char:String(x), count:0};
+      });
+    }
+    if (typeof bd === "object") return Object.entries(bd).map(([k,v])=>({char:String(k), count:num(v)}));
+    return [];
+  };
+
+  // 五格（新字体・霊数なし）を計算
+  function calcGokaku(inputSurname, bdAll, surnameTotal, givenTotal, totalAll){
+    const sLen = [...(inputSurname||"")].length;
+    const surnameParts = bdAll.slice(0, sLen);
+    const givenParts   = bdAll.slice(sLen);
+    const sum = (arr)=>arr.reduce((a,b)=>a+num(b.count),0);
+
+    const tenkaku = surnameTotal || sum(surnameParts);
+    const chikaku = givenTotal   || sum(givenParts);
+    const soukaku = totalAll     || (tenkaku + chikaku);
+    const jinkaku = (surnameParts[surnameParts.length-1]?.count||0) + (givenParts[0]?.count||0);
+    const gaikaku = (sou kaku && jinkaku) ? (soukaku - jinkaku) : 0;
+
+    return { tenkaku, jinkaku, chikaku, gaikaku, soukaku };
+  }
+
+  // API（Edgeログの形）→ フロント用に正規化
+  function normalizeFromApi(data, inputSurname){
+    const out = { candidates: [], policy: data.policy || {} };
+    const arr = Array.isArray(data?.candidates) ? data.candidates : [];
+    out.candidates = arr.slice(0,3).map(c=>{
+      // strokes: surname/given/total の入れ子から必要値を抜く
+      const sT = num(c.strokes?.surname?.total);
+      const gT = num(c.strokes?.given?.total);
+      const tT = num(c.strokes?.total);
+      // breakdown は surname/given それぞれにある想定
+      const bdSurname = normBD(c.strokes?.surname?.breakdown);
+      const bdGiven   = normBD(c.strokes?.given?.breakdown);
+      const bdAll     = [...bdSurname, ...bdGiven];
+
+      // 五格を算出
+      const gk = calcGokaku(inputSurname, bdAll, sT, gT, tT);
+
+      // 運勢（文字列 or {grade/label} どちらでも）
+      const luck = {
+        overall: pickStr(c.fortune?.overall),
+        work:    pickStr(c.fortune?.work),
+        love:    pickStr(c.fortune?.love),
+        health:  pickStr(c.fortune?.health)
+      };
+
+      // 姓が抜けている候補に、入力の姓を付与
+      const fullName = (c.name||"").includes(inputSurname) ? c.name : `${inputSurname} ${c.name||""}`.trim();
+
+      return {
+        name: fullName,
+        reading: c.reading || "",
+        copy: c.copy || "",
+        story: c.story || "",
+        strokes: {
+          surnameTotal: sT || (bdSurname.reduce((a,b)=>a+b.count,0) || undefined),
+          givenTotal:   gT || (bdGiven.reduce((a,b)=>a+b.count,0)   || undefined),
+          total:        tT || (sT + gT || undefined),
+          breakdown:    bdAll
+        },
+        fortune: {
+          tenkaku: { value: gk.tenkaku },
+          jinkaku: { value: gk.jinkaku },
+          chikaku: { value: gk.chikaku },
+          gaikaku: { value: gk.gaikaku },
+          soukaku: { value: gk.soukaku },
+          luck,
+          note: c.fortune?.note || ""
+        }
+      };
     });
-  </script>
+    return out;
+  }
+
+  // 表示用ヘルパ
+  const safeVal = (v)=> (v==null || v==="") ? "-" : (typeof v==="object" ? (("value" in v)?v.value:("total" in v?v.total:JSON.stringify(v))) : v);
+  const row = (a,va,b,vb)=>{
+    const gA=(va&&va.grade)?`<span class="pill">${va.grade}</span>`:"";
+    const gB=(vb&&vb.grade)?`<span class="pill">${vb.grade}</span>`:"";
+    return `<tr><th>${a}</th><td>${safeVal(va)} ${gA}</td><th>${b}</th><td>${safeVal(vb)} ${gB}</td></tr>`;
+  };
+
+  function render(data){
+    const wrap = $("results"); wrap.innerHTML="";
+    (data.candidates||[]).forEach(c=>{
+      const bd = Array.isArray(c.strokes?.breakdown) && c.strokes.breakdown.length
+        ? c.strokes.breakdown.map(x=>`${x.char}:${x.count}`).join(" / ")
+        : "-";
+      const d = document.createElement("div"); d.className="result-card";
+      d.innerHTML = `
+        <div class="name">${c.name||""}</div>
+        <div class="meta">${c.reading?`読み：${c.reading}`:""}</div>
+        <div class="copy">${c.copy||""}</div>
+        <div class="story">${c.story||""}</div>
+        <div class="meta"><b>姓名判断（推定）</b></div>
+        <div class="table-wrap"><table>
+          ${row("天格",c.fortune?.tenkaku,"人格",c.fortune?.jinkaku)}
+          ${row("地格",c.fortune?.chikaku,"外格",c.fortune?.gaikaku)}
+          ${row("総格",c.fortune?.soukaku,"総合運",{grade:c.fortune?.luck?.overall})}
+          ${row("仕事運",{grade:c.fortune?.luck?.work},"恋愛運",{grade:c.fortune?.luck?.love})}
+          ${row("健康運",{grade:c.fortune?.luck?.health},"備考",{value:c.fortune?.note||""})}
+        </table></div>
+        <div class="meta"><b>画数診断（推定）</b></div>
+        <div class="table-wrap"><table>
+          <tr><th>姓 合計</th><td>${safeVal(c.strokes?.surnameTotal)}</td>
+              <th>名 合計</th><td>${safeVal(c.strokes?.givenTotal)}</td></tr>
+          <tr><th>総画</th><td colspan="3">${safeVal(c.strokes?.total)}</td></tr>
+          <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
+        </table></div>`;
+      wrap.appendChild(d);
+    });
+    wrap.style.display="grid";
+  }
+
+  // クリックイベント
+  $("submit").addEventListener("click", async ()=>{
+    const payload = {
+      surname: $("surname").value.trim(),
+      gender:  $("gender").value,
+      concept: $("concept").value.trim()
+    };
+    if (!payload.surname || !payload.concept) { alert("苗字と希望イメージを入力してください。"); return; }
+
+    $("submit").disabled = true; $("submit").textContent = "生成中…";
+    try{
+      const r = await fetch("/api/generate", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+      const raw = await r.json();
+      if (!r.ok) throw new Error(raw?.message || "Server error");
+
+      // ← Edgeログの形をフロント用に整形
+      const normalized = normalizeFromApi(raw, payload.surname);
+
+      // デバッグが必要ならこちらもどうぞ
+      // console.log("[raw]", raw);
+      // console.log("[normalized]", normalized);
+
+      render(normalized);
+      $("results").scrollIntoView({behavior:"smooth", block:"start"});
+    }catch(e){
+      console.error(e); alert("生成に失敗しました。時間をおいて再度お試しください。");
+    }finally{
+      $("submit").disabled = false; $("submit").textContent = "無料で診断する";
+    }
+  });
+</script>
 </body>
 </html>
