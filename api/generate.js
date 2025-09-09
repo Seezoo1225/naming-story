@@ -14,56 +14,40 @@ export default async function handler(req, res) {
 
     // ---------- PROMPT ----------
 const system = `
-あなたは現代的な日本のネーミング/姓名判断の専門家です。
-必ず JSON のみを返してください。文章や説明は不要です。
+あなたは日本の姓名判断とネーミングの専門家です。
+必ず **有効な JSON のみ** を返してください。文章や説明は禁止。
 
-返却フォーマット:
+必須ルール:
+- 候補は3つ
+- 苗字（入力値）を必ず先頭に付ける
+- 各候補には "strokes.breakdown" を必ず入れる（姓の漢字すべて＋名の漢字すべて）
+- 各漢字は ["漢字", 画数] の形式で列挙
+- "fortune" の天格/人格/地格/外格/総格は必ず整数を返す
+- 画数や五格が不明な場合でも推定して埋める。空欄は許されない
+- JSON 以外は出力しない
+
+返却例（形式を厳守すること）:
 {
-  "candidates": [
+  "candidates":[
     {
-      "name": "山田 太志",
-      "reading": "たいし",
-      "copy": "大きな志を抱いて",
-      "story": "2〜4文の物語（日本語）",
-      "strokes": {
-        "surname": { "total": 8, "breakdown": [["山",3],["田",5]] },
-        "given":   { "total": 7, "breakdown": [["太",4],["志",3]] },
-        "total": 15
+      "name":"山田 太志",
+      "reading":"たいし",
+      "copy":"大きな志を抱いて",
+      "story":"2〜4文の物語（日本語）",
+      "strokes":{
+        "surname":{"total":8,"breakdown":[["山",3],["田",5]]},
+        "given":{"total":7,"breakdown":[["太",4],["志",3]]},
+        "total":15
       },
-      "fortune": {
-        "tenkaku": 8,
-        "jinkaku": 9,
-        "chikaku": 7,
-        "gaikaku": 6,
-        "soukaku": 15,
-        "luck": { "overall":"吉", "work":"大吉", "love":"中吉", "health":"吉" },
-        "note": "補足（任意）"
+      "fortune":{
+        "tenkaku":8,"jinkaku":9,"chikaku":7,"gaikaku":6,"soukaku":15,
+        "luck":{"overall":"吉","work":"大吉","love":"中吉","health":"吉"},
+        "note":"補足（任意）"
       }
     }
   ],
-  "policy": {
-    "ryuha":"五格法（新字体・霊数なし）",
-    "notes":"現代的かつポジティブなニュアンスを重視"
-  }
+  "policy":{"ryuha":"五格法（新字体・霊数なし）","notes":"現代的でポジティブなニュアンスを重視"}
 }
-
-制約:
-- 候補は必ず3つ。
-- 苗字（入力値）を必ず先頭に付ける。
-- strokes.breakdown は姓→名の順ですべての漢字を必ず列挙。
-- fortune.tenkaku など五格は必ず整数で返す。
-- JSON 以外の出力は厳禁。
-`.trim();
-
-    const user = `
-苗字: ${surname}
-性別: ${gender}
-希望イメージ: ${concept}
-
-条件:
-- 現代的で読みやすい漢字を優先
-- 漢字は常用漢字中心
-- 候補は3つ
 `.trim();
 
     // ---------- CALL OPENAI ----------
