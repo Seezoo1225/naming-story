@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: "surname and concept are required" });
     }
 
-    // ✅ debug=1 の場合は3候補を返す
+    // ✅ debug=1 の場合はフォールバックを返す
     if (String(req.query?.debug) === "1") {
       const fallback = {
         candidates: [
@@ -60,8 +60,44 @@ export default async function handler(req, res) {
       return res.status(200).json(fallback);
     }
 
-    // ✅ 通常モード（OpenAI呼び出し）
-    const system = `...（省略：ここは既に組み込んだプロンプト強化版をそのまま残してください）...`;
+    // ---------- system prompt ----------
+    const system = `
+You are a Japanese naming & seimei-handan expert.
+Respond only in json. The output must be a single valid JSON object.
+Do not add any explanations, prose, markdown, or code fences outside the json.
+
+必須ルール:
+- 候補は3つ。
+- 苗字（入力値）を必ず name の先頭に付ける。
+- strokes.breakdown は姓→名の順ですべての漢字を必ず列挙（["漢字", 画数]）。
+- strokes.surname.total / strokes.given.total / strokes.total を必ず整数で返す。
+- fortune の天格/人格/地格/外格/総格も必ず整数で返す（推定可・空欄禁止）。
+- luck は日本語（大吉/中吉/吉/小吉/凶/大凶 など）。
+- JSON 以外の出力は禁止。
+
+返却形式の例:
+{
+  "candidates":[
+    {
+      "name":"山田 太志",
+      "reading":"たいし",
+      "copy":"大きな志を抱いて",
+      "story":"2〜4文の物語（日本語）",
+      "strokes":{
+        "surname":{"total":8,"breakdown":[["山",3],["田",5]]},
+        "given":{"total":7,"breakdown":[["太",4],["志",3]]},
+        "total":15
+      },
+      "fortune":{
+        "tenkaku":8,"jinkaku":9,"chikaku":7,"gaikaku":6,"soukaku":15,
+        "luck":{"overall":"吉","work":"大吉","love":"中吉","health":"吉"},
+        "note":"補足（任意）"
+      }
+    }
+  ],
+  "policy":{"ryuha":"五格法（新字体・霊数なし）","notes":"現代的でポジティブなニュアンスを重視"}
+}
+    `.trim();
 
     const user = `
 苗字: ${surname}
