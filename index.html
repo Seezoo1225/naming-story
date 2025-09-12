@@ -1,289 +1,164 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Your Story Naming</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
-  <meta name="description" content="AI × STORY × 姓名判断。苗字・性別・イメージから、現代的な“名前の物語”を3候補ご提案。">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>名前ストーリー診断</title>
   <style>
-    :root{
-      --bg:#f9f9fb; --fg:#2e2a2f; --card:#fff; --muted:#6b6270;
-      --primary:#77428D; --primary-dark:#5d2f6e; --accent:#ede6f3; --border:#e2dce8;
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      background: #f8f6fb;
+      margin: 0;
+      padding: 0;
+      color: #333;
     }
-    body{font-family:'Noto Sans JP',sans-serif;margin:0;background:var(--bg);color:var(--fg);}
-    header{background:var(--primary);color:#fff;padding:32px 20px;text-align:center;}
-    header h1{margin:0;font-size:1.8rem;font-weight:700;}
-    header p{margin-top:8px;font-size:1rem;opacity:.95;}
-    main{max-width:960px;margin:20px auto;padding:0 16px;}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,.04);}
-    label{display:block;font-weight:600;margin-top:16px;}
-    input,select,button,textarea{width:100%;padding:12px;margin-top:8px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;}
-    input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(119,66,141,.15);}
-    button{margin-top:20px;background:var(--primary);color:#fff;border:none;font-weight:600;transition:background .3s;cursor:pointer;}
-    button:hover{background:var(--primary-dark);} button[disabled]{opacity:.7;cursor:not-allowed;}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:24px;}
-    .result-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,.05);}
-    .name{font-size:20px;font-weight:700;color:var(--primary-dark);}
-    .copy{margin-top:4px;font-style:italic;color:var(--muted);}
-    .story{margin-top:10px;line-height:1.7;white-space:pre-wrap;}
-    .meta{margin-top:12px;font-size:13px;color:var(--fg);}
-    .table-wrap{overflow-x:auto;}
-    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;}
-    th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;}
-    th{background:var(--accent);}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--accent);font-size:12px;margin-left:6px;color:var(--primary-dark);}
-    footer{margin-top:40px;text-align:center;font-size:12px;color:var(--muted);padding:20px;}
-    footer a{color:var(--primary-dark);text-decoration:none;margin:0 6px;} footer a:hover{text-decoration:underline;}
+    header {
+      background: #4b0082; /* 江戸紫 */
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      color: #4b0082;
+      margin-top: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    td, th {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: center;
+    }
+    button {
+      background: #4b0082;
+      color: white;
+      padding: 0.8rem 1.2rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Your Story Naming</h1>
-    <p>AI × STORY × 姓名判断で、あなたに合う名前を3候補ご提案します。</p>
+    <h1>名前ストーリー診断</h1>
+    <p>AI × 姓名判断 × ストーリー</p>
   </header>
-
   <main>
     <div class="card">
-      <label for="surname">苗字</label>
-      <input id="surname" placeholder="例: 山田" />
+      <label>苗字</label><br>
+      <input id="surname" type="text" placeholder="例: 山田" style="width:100%;padding:0.5rem"><br><br>
 
-      <label for="gender">性別</label>
-      <select id="gender">
-        <option value="boy">男の子</option>
-        <option value="girl">女の子</option>
-        <option value="unknown" selected>どちらでも</option>
-      </select>
+      <label>性別</label><br>
+      <select id="gender" style="width:100%;padding:0.5rem">
+        <option value="unknown">どちらでも</option>
+        <option value="male">男性</option>
+        <option value="female">女性</option>
+      </select><br><br>
 
-      <label for="concept">希望イメージ</label>
-      <input id="concept" placeholder="例: 強さ / 優しさ / 国際感 / 静かなカリスマ" />
+      <label>希望イメージ</label><br>
+      <input id="concept" type="text" placeholder="例: 未来, 光, 強さ" style="width:100%;padding:0.5rem"><br><br>
 
-      <button id="submit">無料で診断する</button>
+      <button onclick="generate()">無料で診断する</button>
     </div>
 
-    <div id="results" class="grid" style="display:none;"></div>
-    <div id="policy" class="meta" style="display:none;margin-top:12px;"></div>
+    <div id="results"></div>
   </main>
 
-  <footer>
-    © Your Story Naming ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシー</a>
-  </footer>
+  <script>
+    async function generate() {
+      const surname = document.getElementById("surname").value.trim();
+      const gender = document.getElementById("gender").value;
+      const concept = document.getElementById("concept").value.trim();
 
-<script>
-  const $ = (id) => document.getElementById(id);
+      if (!surname || !concept) {
+        alert("苗字と希望イメージを入力してください。");
+        return;
+      }
 
-  // --- Utils ---
-  const num = (v) => {
-    if (v == null) return 0;
-    if (typeof v === "number") return v;
-    if (typeof v === "string") return Number(v) || 0;
-    if (typeof v === "object") {
-      if ("value" in v) return num(v.value);
-      if ("total" in v) return num(v.total);
+      document.getElementById("results").innerHTML = "<p>診断中...</p>";
+
+      try {
+        // 🔑 debug=1 を付けると必ずダミー応答が返ります
+        const response = await fetch("/api/generate?debug=1", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ surname, gender, concept })
+        });
+
+        const data = await response.json();
+        console.log("[/api/generate response]", data);
+
+        if (!data || !data.candidates) {
+          document.getElementById("results").innerHTML = "<p>生成に失敗しました。</p>";
+          return;
+        }
+
+        let html = "";
+        data.candidates.forEach(c => {
+          html += `
+            <div class="card">
+              <h2>${c.name}</h2>
+              <p><b>読み:</b> ${c.reading}</p>
+              <p><i>${c.copy}</i></p>
+              <p>${c.story}</p>
+
+              <h3>姓名判断（推定）</h3>
+              <table>
+                <tr><td>天格</td><td>${c.fortune?.tenkaku || "-"}</td>
+                    <td>人格</td><td>${c.fortune?.jinkaku || "-"}</td></tr>
+                <tr><td>地格</td><td>${c.fortune?.chikaku || "-"}</td>
+                    <td>外格</td><td>${c.fortune?.gaikaku || "-"}</td></tr>
+                <tr><td>総格</td><td>${c.fortune?.soukaku || "-"}</td>
+                    <td>総合運</td><td>${c.fortune?.luck?.overall || "-"}</td></tr>
+                <tr><td>仕事運</td><td>${c.fortune?.luck?.work || "-"}</td>
+                    <td>恋愛運</td><td>${c.fortune?.luck?.love || "-"}</td></tr>
+                <tr><td>健康運</td><td>${c.fortune?.luck?.health || "-"}</td>
+                    <td>備考</td><td>${c.fortune?.note || "-"}</td></tr>
+              </table>
+
+              <h3>画数診断（推定）</h3>
+              <table>
+                <tr><td>姓 合計</td><td>${c.strokes?.surname?.total || "-"}</td>
+                    <td>名 合計</td><td>${c.strokes?.given?.total || "-"}</td></tr>
+                <tr><td>総画</td><td colspan="3">${c.strokes?.total || "-"}</td></tr>
+                <tr><td>内訳</td><td colspan="3">${
+                  (c.strokes?.surname?.breakdown || []).concat(c.strokes?.given?.breakdown || [])
+                    .map(b => b.join(":"))
+                    .join(" / ") || "-"
+                }</td></tr>
+              </table>
+            </div>
+          `;
+        });
+
+        document.getElementById("results").innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("results").innerHTML = "<p>エラーが発生しました。</p>";
+      }
     }
-    return 0;
-  };
-  const pickStr = (v) =>
-    typeof v === "string"
-      ? v
-      : v && v.label
-      ? v.label
-      : v && v.grade
-      ? v.grade
-      : "";
-
-  const normBD = (bd) => {
-    if (!bd) return [];
-    if (Array.isArray(bd)) {
-      return bd.map((x) => {
-        if (Array.isArray(x))
-          return { char: String(x[0]), count: num(x[1]) };
-        if (typeof x === "object")
-          return {
-            char: String(x.kanji || x.char || x.k || "?"),
-            count: num(x.count || x.stroke || x.s || x.v),
-          };
-        return { char: String(x), count: 0 };
-      });
-    }
-    if (typeof bd === "object")
-      return Object.entries(bd).map(([k, v]) => ({
-        char: String(k),
-        count: num(v),
-      }));
-    return [];
-  };
-
-  // 五格（新字体・霊数なし）を計算
-  function calcGokaku(inputSurname, bdAll, surnameTotal, givenTotal, totalAll) {
-    const sLen = [...(inputSurname || "")].length;
-    const surnameParts = bdAll.slice(0, sLen);
-    const givenParts = bdAll.slice(sLen);
-    const sum = (arr) => arr.reduce((a, b) => a + num(b.count), 0);
-
-    const tenkaku = surnameTotal || sum(surnameParts);
-    const chikaku = givenTotal || sum(givenParts);
-    const soukaku = totalAll || tenkaku + chikaku;
-    const jinkaku =
-      (surnameParts[surnameParts.length - 1]?.count || 0) +
-      (givenParts[0]?.count || 0);
-    const gaikaku = soukaku && jinkaku ? soukaku - jinkaku : 0;
-
-    return { tenkaku, jinkaku, chikaku, gaikaku, soukaku };
-  }
-
-  // API → フロント用に正規化
-  function normalizeFromApi(data, inputSurname) {
-    const out = { candidates: [], policy: data.policy || {} };
-    const arr = Array.isArray(data?.candidates) ? data.candidates : [];
-    out.candidates = arr.slice(0, 3).map((c) => {
-      const sT = num(c.strokes?.surname?.total);
-      const gT = num(c.strokes?.given?.total);
-      const tT = num(c.strokes?.total);
-
-      const bdSurname = normBD(c.strokes?.surname?.breakdown);
-      const bdGiven = normBD(c.strokes?.given?.breakdown);
-      const bdAll = [...bdSurname, ...bdGiven];
-
-      const gk = calcGokaku(inputSurname, bdAll, sT, gT, tT);
-
-      const luck = {
-        overall: pickStr(c.fortune?.overall),
-        work: pickStr(c.fortune?.work),
-        love: pickStr(c.fortune?.love),
-        health: pickStr(c.fortune?.health),
-      };
-
-      const fullName = (c.name || "").includes(inputSurname)
-        ? c.name
-        : `${inputSurname} ${c.name || ""}`.trim();
-
-      return {
-        name: fullName,
-        reading: c.reading || "",
-        copy: c.copy || "",
-        story: c.story || "",
-        strokes: {
-          surnameTotal:
-            sT || bdSurname.reduce((a, b) => a + b.count, 0) || undefined,
-          givenTotal:
-            gT || bdGiven.reduce((a, b) => a + b.count, 0) || undefined,
-          total: tT || sT + gT || undefined,
-          breakdown: bdAll,
-        },
-        fortune: {
-          tenkaku: { value: gk.tenkaku },
-          jinkaku: { value: gk.jinkaku },
-          chikaku: { value: gk.chikaku },
-          gaikaku: { value: gk.gaikaku },
-          soukaku: { value: gk.soukaku },
-          luck,
-          note: c.fortune?.note || "",
-        },
-      };
-    });
-    return out;
-  }
-
-  // 表示用
-  const safeVal = (v) =>
-    v == null || v === ""
-      ? "-"
-      : typeof v === "object"
-      ? "value" in v
-        ? v.value
-        : "total" in v
-        ? v.total
-        : JSON.stringify(v)
-      : v;
-  const row = (a, va, b, vb) => {
-    const gA = va && va.grade ? `<span class="pill">${va.grade}</span>` : "";
-    const gB = vb && vb.grade ? `<span class="pill">${vb.grade}</span>` : "";
-    return `<tr><th>${a}</th><td>${safeVal(
-      va
-    )} ${gA}</td><th>${b}</th><td>${safeVal(vb)} ${gB}</td></tr>`;
-  };
-
-  function render(data) {
-    const wrap = $("results");
-    wrap.innerHTML = "";
-    (data.candidates || []).forEach((c) => {
-      const bd =
-        Array.isArray(c.strokes?.breakdown) && c.strokes.breakdown.length
-          ? c.strokes.breakdown.map((x) => `${x.char}:${x.count}`).join(" / ")
-          : "-";
-      const d = document.createElement("div");
-      d.className = "result-card";
-      d.innerHTML = `
-        <div class="name">${c.name || ""}</div>
-        <div class="meta">${c.reading ? `読み：${c.reading}` : ""}</div>
-        <div class="copy">${c.copy || ""}</div>
-        <div class="story">${c.story || ""}</div>
-        <div class="meta"><b>姓名判断（推定）</b></div>
-        <div class="table-wrap"><table>
-          ${row("天格", c.fortune?.tenkaku, "人格", c.fortune?.jinkaku)}
-          ${row("地格", c.fortune?.chikaku, "外格", c.fortune?.gaikaku)}
-          ${row("総格", c.fortune?.soukaku, "総合運", {
-            grade: c.fortune?.luck?.overall,
-          })}
-          ${row("仕事運", { grade: c.fortune?.luck?.work }, "恋愛運", {
-            grade: c.fortune?.luck?.love,
-          })}
-          ${row("健康運", { grade: c.fortune?.luck?.health }, "備考", {
-            value: c.fortune?.note || "",
-          })}
-        </table></div>
-        <div class="meta"><b>画数診断（推定）</b></div>
-        <div class="table-wrap"><table>
-          <tr><th>姓 合計</th><td>${safeVal(
-            c.strokes?.surnameTotal
-          )}</td><th>名 合計</th><td>${safeVal(c.strokes?.givenTotal)}</td></tr>
-          <tr><th>総画</th><td colspan="3">${safeVal(
-            c.strokes?.total
-          )}</td></tr>
-          <tr><th>内訳</th><td colspan="3">${bd}</td></tr>
-        </table></div>`;
-      wrap.appendChild(d);
-    });
-    wrap.style.display = "grid";
-  }
-
-  $("submit").addEventListener("click", async () => {
-    const payload = {
-      surname: $("surname").value.trim(),
-      gender: $("gender").value,
-      concept: $("concept").value.trim(),
-    };
-    if (!payload.surname || !payload.concept) {
-      alert("苗字と希望イメージを入力してください。");
-      return;
-    }
-
-    $("submit").disabled = true;
-    $("submit").textContent = "生成中…";
-    try {
-      const r = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const raw = await r.json();
-      if (!r.ok) throw new Error(raw?.message || "Server error");
-
-      const normalized = normalizeFromApi(raw, payload.surname);
-      console.log("[normalized]", normalized); // デバッグ表示
-
-      render(normalized);
-      $("results").scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (e) {
-      console.error(e);
-      alert("生成に失敗しました。時間をおいて再度お試しください。");
-    } finally {
-      $("submit").disabled = false;
-      $("submit").textContent = "無料で診断する";
-    }
-  });
-</script>
+  </script>
 </body>
 </html>
-<!-- bump 2025-09-10 00:20:37 -->
