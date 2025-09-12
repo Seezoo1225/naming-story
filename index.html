@@ -79,6 +79,12 @@
       <label>希望イメージ</label><br>
       <input id="concept" type="text" placeholder="例: 未来, 光, 強さ" style="width:100%;padding:0.5rem"><br><br>
 
+      <!-- ✅ デバッグ切替 -->
+      <label style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0;">
+        <input id="debugMode" type="checkbox">
+        デバッグモード（ダミー結果を返す）
+      </label><br>
+
       <button onclick="generate()">無料で診断する</button>
     </div>
 
@@ -90,6 +96,7 @@
       const surname = document.getElementById("surname").value.trim();
       const gender = document.getElementById("gender").value;
       const concept = document.getElementById("concept").value.trim();
+      const debug = document.getElementById("debugMode")?.checked;
 
       if (!surname || !concept) {
         alert("苗字と希望イメージを入力してください。");
@@ -99,8 +106,8 @@
       document.getElementById("results").innerHTML = "<p>診断中...</p>";
 
       try {
-        // 🔑 debug=1 を付けると必ずダミー応答が返ります
-        const response = await fetch("/api/generate?debug=1", {
+        const endpoint = debug ? "/api/generate?debug=1" : "/api/generate";
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ surname, gender, concept })
