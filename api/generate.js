@@ -14,14 +14,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: "surname and concept are required" });
     }
 
-    // ✅ debug=1 の場合はフォールバックを返す
+    // debug=1 → ダミー3候補
     if (String(req.query?.debug) === "1") {
       const fallback = {
         candidates: [
           {
             name: `${surname} 未来志`, reading: "みらいし",
             copy: "未来へ進む意志を込めて。",
-            story: "新しい道を切り開き、周囲に希望を灯す人を描きます。",
+            story: "新しい道を切り開き、周囲に希望を灯す人を描きます。柔らかな音のように人の心に届き、明るい一歩を促す存在です。",
             strokes: {
               surname: { total: 8, breakdown: [["山",3],["田",5]] },
               given:   { total: 8, breakdown: [["未",5],["志",3]] },
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
           {
             name: `${surname} 未来翔`, reading: "みらいしょう",
             copy: "未来へ翔ける力強さ。",
-            story: "挑戦を恐れず、高く翔び続ける姿をイメージ。",
+            story: "挑戦を恐れず、視野を広げて高く翔び続ける姿をイメージ。仲間と共鳴し、新しい追い風を生む人です。",
             strokes: {
               surname: { total: 8, breakdown: [["山",3],["田",5]] },
               given:   { total: 12, breakdown: [["未",5],["翔",7]] },
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
           {
             name: `${surname} 未来光`, reading: "みらいこう",
             copy: "未来を照らす光。",
-            story: "周囲を明るく導く、温かい光の存在を描きます。",
+            story: "優しい光で周囲を導く存在。困難な場面でも温かく背中を押し、前を向く勇気を思い出させます。",
             strokes: {
               surname: { total: 8, breakdown: [["山",3],["田",5]] },
               given:   { total: 8, breakdown: [["未",5],["光",3]] },
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       return res.status(200).json(fallback);
     }
 
-    // ---------- system prompt ----------
+    // ---------- system prompt（ストーリー長め） ----------
     const system = `
 You are a Japanese naming & seimei-handan expert.
 Respond only in json. The output must be a single valid JSON object.
@@ -73,6 +73,7 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
 - strokes.surname.total / strokes.given.total / strokes.total を必ず整数で返す。
 - fortune の天格/人格/地格/外格/総格も必ず整数で返す（推定可・空欄禁止）。
 - luck は日本語（大吉/中吉/吉/小吉/凶/大凶 など）。
+- **story は日本語で 3〜5 文、合計 200〜300 文字目安。読みやすい自然な文体で、前向きかつ現代的な表現にする。**
 - JSON 以外の出力は禁止。
 
 返却形式の例:
@@ -114,7 +115,7 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
       body: JSON.stringify({
         model: "gpt-4o-mini",
         response_format: { type: "json_object" },
-        temperature: 0.7,
+        temperature: 0.8,             // 少しだけ豊かに
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
