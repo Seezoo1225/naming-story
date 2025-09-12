@@ -1,314 +1,331 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>名前ストーリー診断</title>
-  <meta name="color-scheme" content="light">
-  <style>
-    :root{
-      --edo: #4b0082;           /* 江戸紫（主色） */
-      --edo-50:#f5f0fb;
-      --line:#e7e2ee;
-      --ok:#1e8d3e;
-      --warn:#b66a00;
-      --bad:#a10d3a;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; color:#333; background:#f8f6fb;
-      font-family: "Hiragino Kaku Gothic ProN", Meiryo, system-ui, -apple-system, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-    header{
-      background:var(--edo); color:#fff; padding:28px 16px; text-align:center;
-    }
-    header h1{margin:0 0 6px 0; font-size: clamp(22px, 3.2vw, 34px);}
-    header p{margin:0; opacity:.9; letter-spacing:.06em}
-
-    main{max-width: 1050px; margin: 28px auto; padding: 0 16px;}
-
-    /* 入力カード */
-    .panel{
-      background:#fff; border-radius:12px; padding:16px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.06);
-      border:1px solid var(--line);
-    }
-    .row{display:grid; grid-template-columns: 1fr; gap:12px}
-    @media(min-width:700px){
-      .row{grid-template-columns: 1fr 200px 1fr}
-    }
-    label{font-size:14px; color:#5a5270}
-    input, select{
-      width:100%; padding:10px 12px; font-size:16px; border-radius:8px;
-      border:1px solid #d7d0df; background:#fff;
-    }
-    .checkline{display:flex; align-items:center; gap:8px; margin-top:6px; color:#574a7a; font-size:14px}
-    button.primary{
-      width:100%; margin-top:12px; padding:14px 18px; font-size:16px; font-weight:600;
-      color:#fff; background:var(--edo); border:0; border-radius:9px; cursor:pointer;
-    }
-    button.primary:hover{opacity:.92}
-    .muted{color:#766e8e; font-size:13px; margin-top:6px}
-
-    /* カードグリッド（横並び） */
-    .cards{
-      margin-top:12px;
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap:18px;
-    }
-    .card{
-      background:#fff; border-radius:12px; padding:16px;
-      border:1px solid var(--line);
-      box-shadow: 0 2px 10px rgba(0,0,0,.05);
-      display:flex; flex-direction:column; gap:10px;
-    }
-    .name{font-size:22px; color:var(--edo); margin:0}
-    .reading{margin:0; font-size:14px; color:#6b6480}
-    .copy{margin:6px 0 0 0; font-style:italic; color:#4a3e6b}
-    .story{margin:0; line-height:1.85; white-space:pre-line;} /* 段落風 */
-
-    table{
-      width:100%; border-collapse:collapse; margin-top:4px; font-size:14px;
-      border:1px solid var(--line); border-radius:10px; overflow:hidden;
-    }
-    th,td{border:1px solid var(--line); padding:8px; text-align:center;}
-    th{background:#f5f0fb; color:#4a3e6b; font-weight:600}
-    .subttl{margin:14px 0 6px 0; font-size:15px; color:#5a5270; font-weight:700}
-
-    /* 運勢バッジ（色分け） */
-    .pill{display:inline-block; padding:.25rem .55rem; border-radius:999px; font-size:12px; border:1px solid #ddd}
-    .pill.daikichi { background:#ffe8e8; color:#c01818; border-color:#ffcaca; } /* 大吉=赤 */
-    .pill.chukichi { background:#fff2df; color:#b66a00; border-color:#ffd9a8; } /* 中吉=オレンジ */
-    .pill.kichi    { background:#eaf7ef; color:#1e8d3e; border-color:#cdebd6; } /* 吉=緑 */
-    .pill.shokichi { background:#fffbe6; color:#7a6a00; border-color:#f1e9b3; } /* 小吉=黄 */
-    .pill.kyou     { background:#f8e8ef; color:#a10d3a; border-color:#f2c1d2; } /* 凶=えんじ */
-    .pill.daikyou  { background:#ffe1e6; color:#8e001a; border-color:#ffb9c6; } /* 大凶=濃い赤 */
-
-    /* ボタン群 */
-    .actions{display:flex; gap:8px; margin-top:4px}
-    .btn{border:1px solid #d7d0df; background:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px}
-    .btn:hover{background:#faf7ff}
-
-    /* 五格説明 */
-    .legend{
-      margin-top:18px; font-size:13px; color:#5a5270;
-      display:grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap:12px;
-    }
-    .legend .box{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px}
-
-    /* ステータス & 流派表記 */
-    #status{margin: 12px 0 0 0; font-size:14px; color:#6b6480}
-    #policyLine{margin: 6px 0 0 0; font-size:13px; color:#6b6480}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>名前ストーリー診断</title>
+<meta name="color-scheme" content="light">
+<style>
+  :root{
+    --edo:#4b0082; --edo-50:#f5f0fb; --line:#e7e2ee;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f8f6fb;color:#333;font-family:"Hiragino Kaku Gothic ProN",Meiryo,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  header{background:var(--edo);color:#fff;text-align:center;padding:28px 16px}
+  header h1{margin:0 0 6px;font-size:clamp(22px,3.2vw,34px)}
+  header p{margin:0;opacity:.9;letter-spacing:.06em}
+  main{max-width:1050px;margin:28px auto;padding:0 16px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:16px}
+  .row{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:700px){.row{grid-template-columns:1fr 200px 1fr}}
+  label{font-size:14px;color:#5a5270}
+  input,select{width:100%;padding:10px 12px;font-size:16px;border-radius:8px;border:1px solid #d7d0df;background:#fff}
+  .checkline{display:flex;align-items:center;gap:8px;margin-top:6px;color:#574a7a;font-size:14px}
+  button.primary{width:100%;margin-top:12px;padding:14px 18px;font-size:16px;font-weight:600;color:#fff;background:var(--edo);border:0;border-radius:9px;cursor:pointer}
+  button.primary:hover{opacity:.92}
+  .muted{color:#766e8e;font-size:13px;margin-top:6px}
+  .cards{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);padding:16px;display:flex;flex-direction:column;gap:10px}
+  .name{font-size:22px;color:var(--edo);margin:0}
+  .reading{margin:0;font-size:14px;color:#6b6480}
+  .copy{margin:6px 0 0;font-style:italic;color:#4a3e6b}
+  .story{margin:0;line-height:1.85;white-space:pre-line}
+  table{width:100%;border-collapse:collapse;margin-top:4px;font-size:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{border:1px solid var(--line);padding:8px;text-align:center}
+  th{background:#f5f0fb;color:#4a3e6b;font-weight:600}
+  .subttl{margin:14px 0 6px;font-size:15px;color:#5a5270;font-weight:700}
+  .pill{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-size:12px;border:1px solid #ddd}
+  .pill.daikichi{background:#ffe8e8;color:#c01818;border-color:#ffcaca}
+  .pill.chukichi{background:#fff2df;color:#b66a00;border-color:#ffd9a8}
+  .pill.kichi{background:#eaf7ef;color:#1e8d3e;border-color:#cdebd6}
+  .pill.shokichi{background:#fffbe6;color:#7a6a00;border-color:#f1e9b3}
+  .pill.kyou{background:#f8e8ef;color:#a10d3a;border-color:#f2c1d2}
+  .pill.daikyou{background:#ffe1e6;color:#8e001a;border-color:#ffb9c6}
+  .actions{display:flex;gap:8px;margin-top:4px}
+  .btn{border:1px solid #d7d0df;background:#fff;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+  .btn:hover{background:#faf7ff}
+  .legend{margin-top:18px;font-size:13px;color:#5a5270;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .legend .box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+  #status{margin:12px 0 0;font-size:14px;color:#6b6480}
+  #policyLine{margin:6px 0 0;font-size:13px;color:#6b6480}
+</style>
 </head>
 <body>
-  <header>
-    <h1>名前ストーリー診断</h1>
-    <p>AI × 姓名判断 × ストーリー</p>
-  </header>
+<header>
+  <h1>名前ストーリー診断</h1>
+  <p>AI × 姓名判断 × ストーリー</p>
+</header>
 
-  <main>
-    <!-- 入力 -->
-    <div class="panel">
-      <div class="row">
-        <div>
-          <label for="surname">苗字</label>
-          <input id="surname" placeholder="例: 山田" />
-        </div>
-        <div>
-          <label for="gender">性別</label>
-          <select id="gender">
-            <option value="unknown">どちらでも</option>
-            <option value="male">男性</option>
-            <option value="female">女性</option>
-          </select>
-        </div>
-        <div>
-          <label for="concept">希望イメージ</label>
-          <input id="concept" placeholder="例: 未来 / 光 / 読みやすさ重視" />
-        </div>
+<main>
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="surname">苗字</label>
+        <input id="surname" placeholder="例: 山田" />
       </div>
-      <label class="checkline">
-        <input id="debugMode" type="checkbox"> デバッグモード（ダミー結果を返す）
-      </label>
-      <button class="primary" onclick="generate()">無料で診断する</button>
-      <div id="status" class="muted"></div>
-      <div id="policyLine" class="muted"></div>
+      <div>
+        <label for="gender">性別</label>
+        <select id="gender">
+          <option value="unknown">どちらでも</option>
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+      </div>
+      <div>
+        <label for="concept">希望イメージ</label>
+        <input id="concept" placeholder="例: 未来 / 光 / 読みやすさ重視" />
+      </div>
     </div>
+    <label class="checkline">
+      <input id="debugMode" type="checkbox"> デバッグモード（ダミー結果を返す）
+    </label>
+    <button class="primary" onclick="generate()">無料で診断する</button>
+    <div id="status" class="muted"></div>
+    <div id="policyLine" class="muted"></div>
+  </div>
 
-    <!-- 結果 -->
-    <div id="results" class="cards"></div>
+  <div id="results" class="cards"></div>
 
-    <!-- 五格の簡易説明 -->
-    <div class="legend">
-      <div class="box"><b>天格</b>…先祖・家柄の運。姓の合計画。</div>
-      <div class="box"><b>人格</b>…性格・主運。姓の最後＋名の最初。</div>
-      <div class="box"><b>地格</b>…若年期の運。名の合計画。</div>
-      <div class="box"><b>外格</b>…対人運・外向き。総格 − 人格。</div>
-      <div class="box"><b>総格</b>…晩年期や総合的な流れ。姓名の総画。</div>
-    </div>
-  </main>
+  <div class="legend">
+    <div class="box"><b>天格</b>…先祖・家柄の運。姓の合計画。</div>
+    <div class="box"><b>人格</b>…性格・主運。姓の最後＋名の最初。</div>
+    <div class="box"><b>地格</b>…若年期の運。名の合計画。</div>
+    <div class="box"><b>外格</b>…対人運・外向き。総格 − 人格。</div>
+    <div class="box"><b>総格</b>…晩年期や総合的な流れ。姓名の総画。</div>
+  </div>
+</main>
 
-  <script>
-    // 便利関数
-    const textOrDash = (v)=> (v===0 || v===null || v===undefined || v==="") ? "-" : v;
+<script>
+  /***********************
+   * 画数辞書（新字体・霊数なし）
+   * よく使う名前漢字を中心に収録。
+   * 足りない漢字は STROKES に追記してください。
+   ************************/
+  const STROKES = {
+    // 基本
+    "一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9,"十":10,
+    "人":2,"子":3,"大":3,"小":3,"女":3,"山":3,"川":3,"心":4,"手":4,"文":4,"太":4,"天":4,
+    "中":4,"水":4,"木":4,"王":4,"正":5,"生":5,"田":5,"由":5,"目":5,"白":5,"立":5,"永":5,"未":5,
+    "外":5,"本":5,"司":5,"加":5,"北":5,"古":5,"右":5,"左":5,"名":6,"各":6,"光":6,"同":6,"向":6,"百":6,
+    "有":6,"安":6,"守":6,"吉":6,"朱":6,"成":6,"羊":6,"美":9, /* 下で上書きありだが保険 */
+    "兆":6,"次":6,"孝":7,"希":7,"君":7,"成":6,"来":7,"夜":8,"谷":7,"里":7,"良":7,"和":8,"直":8,"青":8,
+    "音":9,"竜":10,"龍":16,
 
-    // 運勢テキスト→バッジのクラス付け
-    function luckToClass(s){
-      const t = String(s||"");
-      if (t.includes("大凶")) return "daikyou";
-      if (t.includes("凶"))   return "kyou";
-      if (t.includes("大吉")) return "daikichi";
-      if (t.includes("中吉")) return "chukichi";
-      if (t.includes("小吉")) return "shokichi";
-      if (t.includes("吉"))   return "kichi";
-      return "";
+    // よく使う名前漢字
+    "愛":13,"葵":12,"明":8,"彩":11,"歩":8,"陽":12,"結":12,"優":17,"悠":11,"勇":9,"佑":7,"祐":10,"友":4,
+    "裕":12,"唯":11,"由":5,"悠":11,"里":7,"莉":10,"凛":15,"玲":10,"蓮":13,"涼":11,"遼":15,
+    "健":11,"翔":12,"司":5,"海":9,"空":8,"宙":8,"宇":6,"星":9,"晴":12,"春":9,"夏":10,"秋":9,"冬":5,
+    "花":7,"華":10,"香":9,"桜":10,"咲":9,"菜":11,"奈":8,"那":7,"結":12,"紗":10,"沙":7,"珠":10,"真":10,
+    "実":8,"美":9,"芽":8,"優":17,"愛":13,"映":9,"音":9,"奏":9,"栞":10,"心":4,"叶":5,"望":11,
+    "希":7,"笑":10,"寧":14,"尊":12,"志":7,"志":7,"士":3,"智":12,"知":8,"忠":8,"直":8,
+    "光":6,"輝":15,"貴":12,"貴":12,"桂":10,"圭":6,"慧":15,"恵":10,"慶":15,"景":12,"景":12,
+    "大":3,"太":4,"汰":7,"汰":7,"拓":8,"拓":8,"匠":6,"将":10,"将":10,"章":11,"彰":14,
+    "健":11,"剛":10,"豪":14,"郁":9,"翼":17,"隼":10,"隼":10,"隼":10,"徹":15,"浩":10,"航":10,
+    "楓":13,"椛":12,"桂":10,"樹":16,"樺":14,"直":8,"尚":8,"真":10,"眞":10,"慎":13,
+    "聡":14,"総":14,"蒼":13,"壮":6,"奏":9,"爽":11,"然":12,"禅":13,"染":9,"蒔":12,
+    "優":17,"遥":13,"陽":12,"結":12,"咲":9,"菜":11,"美":9,"彩":11,"玲":10,"紬":10,"葵":12,"楓":13,
+
+    // 画数が話題になりやすい
+    "輔":14,"輝":15,"輝":15,"大":3,"輝":15,"健":11,"和":8,"樹":16,"太":4,"雅":13,"佳":8,"直":8,
+    "悠":11,"陽":12,"優":17,"結":12,"菜":11,"咲":9,"美":9,"鬼":10,"柔":9,"栄":9,"花":7,"奏":9
+  };
+
+  // 念のため重複キー整理（同キー最後の値が採用される）
+
+  const textOrDash = v => (v===0 || v===null || v===undefined || v==="") ? "-" : v;
+
+  function luckToClass(s){
+    const t = String(s||"");
+    if (t.includes("大凶")) return "daikyou";
+    if (t.includes("凶"))   return "kyou";
+    if (t.includes("大吉")) return "daikichi";
+    if (t.includes("中吉")) return "chukichi";
+    if (t.includes("小吉")) return "shokichi";
+    if (t.includes("吉"))   return "kichi";
+    return "";
+  }
+  const luckBadge = s => !s ? '<span class="pill">-</span>' : `<span class="pill ${luckToClass(s)}">${s}</span>`;
+
+  // 「。」でほどよく段落化
+  function paragraphize(str){
+    if(!str) return "";
+    const s = String(str).replace(/\s+/g,"");
+    const parts = s.split(/(?<=。)/);
+    const chunks = [];
+    let buf = "";
+    for(const p of parts){
+      if((buf+p).length>60){ chunks.push(buf); buf=p; } else { buf+=p; }
     }
-    const luckBadge = (s) => {
-      if(!s) return '<span class="pill">-</span>';
-      const cls = luckToClass(s);
-      return `<span class="pill ${cls}">${s}</span>`;
-    };
+    if(buf) chunks.push(buf);
+    return chunks.join("\n\n");
+  }
 
-    // 段落化（「。」でほどよく改行）→ 見やすい段落風
-    function paragraphize(str){
-      if(!str) return "";
-      const s = String(str).replace(/\s+/g,"");
-      const parts = s.split(/(?<=。)/);
-      const chunks = [];
-      let buf = "";
-      for(const p of parts){
-        if((buf + p).length > 60){ chunks.push(buf); buf = p; }
-        else { buf += p; }
+  // 1文字ごとの画数（辞書→fallback）
+  function strokeOf(ch, fallback){
+    if (ch in STROKES) return STROKES[ch];
+    if (typeof fallback === "number" && fallback>0) return fallback;
+    return null; // 不明
+  }
+
+  // 姓名から surname/given を分離（全角スペース/半角スペース対応）
+  function splitName(surname, full){
+    const clean = String(full).replace(/\s+/g,"");
+    const sChars = Array.from(surname);
+    let rest = clean.startsWith(surname) ? clean.slice(sChars.length) : clean;
+    const gChars = Array.from(rest);
+    return { sChars, gChars };
+  }
+
+  // AI返却の breakdown を辞書で「上書き補正」し、五格を再計算
+  function recalcWithDictionary(candidate, inputSurname){
+    const { sChars, gChars } = splitName(inputSurname, candidate.name||"");
+    // AIの breakdown から fallback 値を拾えるようハッシュ化
+    const aiBD = {};
+    const bdS = candidate?.strokes?.surname?.breakdown || [];
+    const bdG = candidate?.strokes?.given?.breakdown || [];
+    [...bdS, ...bdG].forEach(b=>{
+      const ch = Array.isArray(b) ? String(b[0]) : String(b?.char||"");
+      const n  = Array.isArray(b) ? Number(b[1]) : Number(b?.count);
+      if(ch) aiBD[ch]=isFinite(n)?n:null;
+    });
+
+    const sBD = sChars.map(ch => ({char:ch, count: strokeOf(ch, aiBD[ch])}));
+    const gBD = gChars.map(ch => ({char:ch, count: strokeOf(ch, aiBD[ch])}));
+
+    const sum = arr => arr.reduce((n,x)=>n + (Number(x.count)||0), 0);
+    const sSum = sum(sBD);
+    const gSum = sum(gBD);
+    const total = sSum + gSum;
+
+    // 五格（五格法・新字体・霊数なし）
+    const lastSurname = sBD[sBD.length-1]?.count || 0;
+    const firstGiven  = gBD[0]?.count || 0;
+    const tenkaku = sSum;
+    const chigaku  = gSum;       // 地格
+    const jinkaku  = lastSurname + firstGiven;
+    const soukaku  = total;
+    const gaikaku  = Math.max(soukaku - jinkaku, 0);
+
+    return {
+      ...candidate,
+      __calc: {
+        sBD, gBD, sSum, gSum, total,
+        gokaku: { tenkaku, jinkaku, chikaku: chigaku, gaikaku, soukaku }
       }
-      if(buf) chunks.push(buf);
-      return chunks.join("\n\n"); // white-space:pre-line で段落表示
+    };
+  }
+
+  function renderBreakdownFromCalc(calc){
+    const all = [...calc.sBD, ...calc.gBD];
+    if(!all.length) return "-";
+    return all.map(x => `${x.char}:${x.count ?? "?"}`).join(" / ");
+  }
+
+  function asText(candidate){
+    const f = candidate?.fortune || {};
+    const calc = candidate.__calc;
+    return [
+      `【名前】${candidate.name}（読み: ${candidate.reading||"-"}）`,
+      `【コピー】${candidate.copy||"-"}`,
+      `【ストーリー】${(candidate.story||"-").replace(/\s+$/,"")}`,
+      `【五格（補正）】天:${calc.gokaku.tenkaku} / 人:${calc.gokaku.jinkaku} / 地:${calc.gokaku.chikaku} / 外:${calc.gokaku.gaikaku} / 総:${calc.gokaku.soukaku}`,
+      `【運勢（AI）】総合:${f?.luck?.overall||"-"} / 仕事:${f?.luck?.work||"-"} / 恋愛:${f?.luck?.love||"-"} / 健康:${f?.luck?.health||"-"}`,
+      `【画数（補正）】姓:${calc.sSum} / 名:${calc.gSum} / 総画:${calc.total} / 内訳:${renderBreakdownFromCalc(calc)}`
+    ].join("\n");
+  }
+
+  async function generate(){
+    const surname = document.getElementById("surname").value.trim();
+    const gender  = document.getElementById("gender").value;
+    const concept = document.getElementById("concept").value.trim();
+    const debug   = document.getElementById("debugMode").checked;
+    const endpoint = debug ? "/api/generate?debug=1" : "/api/generate";
+
+    if(!surname || !concept){
+      alert("苗字と希望イメージを入力してください。");
+      return;
     }
 
-    // breakdown を "山:3 / 田:5 / 太:4 / 志:3" のように
-    function renderBreakdown(candidate){
-      const bdSurname = candidate?.strokes?.surname?.breakdown || [];
-      const bdGiven   = candidate?.strokes?.given?.breakdown || [];
-      const bdBoth = Array.isArray(bdSurname) || Array.isArray(bdGiven)
-        ? [...(bdSurname||[]), ...(bdGiven||[])]
-        : (candidate?.strokes?.breakdown || []);
-      if(!bdBoth.length) return "-";
-      return bdBoth.map(b => Array.isArray(b) ? `${b[0]}:${b[1]}` : `${b.char||b[0]}:${b.count||b[1]}`).join(" / ");
-    }
+    const status = document.getElementById("status");
+    const policyLine = document.getElementById("policyLine");
+    const results = document.getElementById("results");
+    status.textContent = "診断中…";
+    policyLine.textContent = "";
+    results.innerHTML = "";
 
-    function asText(candidate){
-      const f = candidate?.fortune || {};
-      const s = candidate?.strokes || {};
-      const sSum = s?.surname?.total ?? s?.surnameTotal ?? "-";
-      const gSum = s?.given?.total   ?? s?.givenTotal   ?? "-";
-      const tSum = s?.total ?? "-";
-      return [
-        `【名前】${candidate.name}（読み: ${candidate.reading||"-"}）`,
-        `【コピー】${candidate.copy||"-"}`,
-        `【ストーリー】${(candidate.story||"-").replace(/\s+$/,"")}`,
-        `【五格】天:${textOrDash(f.tenkaku)} / 人:${textOrDash(f.jinkaku)} / 地:${textOrDash(f.chikaku)} / 外:${textOrDash(f.gaikaku)} / 総:${textOrDash(f.soukaku)}`,
-        `【運勢】総合:${textOrDash(f?.luck?.overall)} / 仕事:${textOrDash(f?.luck?.work)} / 恋愛:${textOrDash(f?.luck?.love)} / 健康:${textOrDash(f?.luck?.health)}`,
-        `【画数】姓:${textOrDash(sSum)} / 名:${textOrDash(gSum)} / 総画:${textOrDash(tSum)} / 内訳:${renderBreakdown(candidate)}`
-      ].join("\n");
-    }
+    try{
+      const res = await fetch(endpoint,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ surname, gender, concept })
+      });
+      const data = await res.json();
+      console.log("[/api/generate response]", data);
 
-    async function generate(){
-      const surname = document.getElementById("surname").value.trim();
-      const gender  = document.getElementById("gender").value;
-      const concept = document.getElementById("concept").value.trim();
-      const debug   = document.getElementById("debugMode").checked;
-      const endpoint = debug ? "/api/generate?debug=1" : "/api/generate";
-
-      if(!surname || !concept){
-        alert("苗字と希望イメージを入力してください。");
+      if(!data || !Array.isArray(data.candidates)){
+        status.textContent = "生成に失敗しました。";
         return;
       }
 
-      const status = document.getElementById("status");
-      const policyLine = document.getElementById("policyLine");
-      const results = document.getElementById("results");
-      status.textContent = "診断中…";
-      policyLine.textContent = "";
-      results.innerHTML = "";
+      const ryuha = data?.policy?.ryuha || "五格法（新字体・霊数なし）";
+      const notes = data?.policy?.notes || "現代的で読みやすい表記を優先";
+      policyLine.textContent = `流派/計算方式：${ryuha} ／ 方針：${notes}（画数と五格は辞書で補正表示）`;
 
-      try{
-        const res = await fetch(endpoint,{
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ surname, gender, concept })
-        });
-        const data = await res.json();
-        console.log("[/api/generate response]", data);
+      // ← ここで全候補に辞書補正を適用
+      const fixed = data.candidates.map(c => recalcWithDictionary(c, surname));
 
-        if(!data || !Array.isArray(data.candidates)){
-          status.textContent = "生成に失敗しました。";
-          return;
-        }
+      results.innerHTML = fixed.map((c, idx) => {
+        const f = c.fortune || {};
+        const calc = c.__calc;
+        return `
+          <div class="card" data-idx="${idx}">
+            <h3 class="name">${c.name || "-"}</h3>
+            <p class="reading">読み：${textOrDash(c.reading)}</p>
+            <p class="copy">${c.copy ? c.copy : ""}</p>
+            <p class="story">${paragraphize(c.story)}</p>
 
-        // 流派/計算方式を表示（なければ五格法）
-        const ryuha = data?.policy?.ryuha || "五格法（新字体・霊数なし）";
-        const notes = data?.policy?.notes || "現代的で読みやすい表記を優先";
-        policyLine.textContent = `流派/計算方式：${ryuha} ／ 方針：${notes}`;
+            <div class="subttl">姓名判断（補正表示）</div>
+            <table>
+              <tr><th>天格</th><td>${calc.gokaku.tenkaku}</td><th>人格</th><td>${calc.gokaku.jinkaku}</td></tr>
+              <tr><th>地格</th><td>${calc.gokaku.chikaku}</td><th>外格</th><td>${calc.gokaku.gaikaku}</td></tr>
+              <tr><th>総格</th><td>${calc.gokaku.soukaku}</td><th>総合運</th><td>${luckBadge(f?.luck?.overall)}</td></tr>
+              <tr><th>💼 仕事運</th><td>${luckBadge(f?.luck?.work)}</td><th>❤️ 恋愛運</th><td>${luckBadge(f?.luck?.love)}</td></tr>
+              <tr><th>🌸 健康運</th><td>${luckBadge(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
+            </table>
 
-        results.innerHTML = data.candidates.map((c, idx) => {
-          const f = c.fortune || {};
-          const s = c.strokes || {};
-          const sSum = s?.surname?.total ?? s?.surnameTotal ?? "-";
-          const gSum = s?.given?.total   ?? s?.givenTotal   ?? "-";
-          const tSum = s?.total ?? "-";
-          const breakdown = renderBreakdown(c);
+            <div class="subttl">画数診断（補正表示）</div>
+            <table>
+              <tr><th>姓 合計</th><td>${calc.sSum}</td><th>名 合計</th><td>${calc.gSum}</td></tr>
+              <tr><th>総画</th><td colspan="3">${calc.total}</td></tr>
+              <tr><th>内訳</th><td colspan="3">${renderBreakdownFromCalc(calc)}</td></tr>
+            </table>
 
-          return `
-            <div class="card" data-idx="${idx}">
-              <h3 class="name">${c.name || "-"}</h3>
-              <p class="reading">読み：${textOrDash(c.reading)}</p>
-              <p class="copy">${c.copy ? c.copy : ""}</p>
-              <p class="story">${paragraphize(c.story)}</p>
-
-              <div class="subttl">姓名判断（推定）</div>
-              <table>
-                <tr><th>天格</th><td>${textOrDash(f.tenkaku)}</td><th>人格</th><td>${textOrDash(f.jinkaku)}</td></tr>
-                <tr><th>地格</th><td>${textOrDash(f.chikaku)}</td><th>外格</th><td>${textOrDash(f.gaikaku)}</td></tr>
-                <tr><th>総格</th><td>${textOrDash(f.soukaku)}</td><th>総合運</th><td>${luckBadge(f?.luck?.overall)}</td></tr>
-                <tr><th>💼 仕事運</th><td>${luckBadge(f?.luck?.work)}</td><th>❤️ 恋愛運</th><td>${luckBadge(f?.luck?.love)}</td></tr>
-                <tr><th>🌸 健康運</th><td>${luckBadge(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
-              </table>
-
-              <div class="subttl">画数診断（推定）</div>
-              <table>
-                <tr><th>姓 合計</th><td>${textOrDash(sSum)}</td><th>名 合計</th><td>${textOrDash(gSum)}</td></tr>
-                <tr><th>総画</th><td colspan="3">${textOrDash(tSum)}</td></tr>
-                <tr><th>内訳</th><td colspan="3">${breakdown}</td></tr>
-              </table>
-
-              <div class="actions">
-                <button class="btn" onclick="copyCard(${idx})">この候補をコピー</button>
-              </div>
+            <div class="actions">
+              <button class="btn" onclick="copyCard(${idx})">この候補をコピー</button>
             </div>
-          `;
-        }).join("");
+          </div>
+        `;
+      }).join("");
 
-        status.textContent = debug ? "（デバッグモード）ダミー結果を表示中。" : "生成完了。";
-        window.__lastCandidates = data.candidates;
+      status.textContent = debug ? "（デバッグモード）ダミー結果を表示中。" : "生成完了。";
+      window.__lastCandidates = fixed;
 
-      }catch(err){
-        console.error(err);
-        status.textContent = "サーバエラーが発生しました。時間をおいて再度お試しください。";
-      }
+    }catch(err){
+      console.error(err);
+      status.textContent = "サーバエラーが発生しました。時間をおいて再度お試しください。";
     }
+  }
 
-    function copyCard(idx){
-      const cand = (window.__lastCandidates || [])[idx];
-      if(!cand){ return; }
-      const text = asText(cand);
-      navigator.clipboard.writeText(text).then(()=>{
-        alert("候補をクリップボードへコピーしました。");
-      }).catch(()=>{
-        prompt("以下をコピーしてください：", text);
-      });
-    }
-  </script>
+  function copyCard(idx){
+    const cand = (window.__lastCandidates || [])[idx];
+    if(!cand) return;
+    const text = asText(cand);
+    navigator.clipboard.writeText(text).then(()=>{
+      alert("候補をクリップボードへコピーしました。");
+    }).catch(()=>{
+      prompt("以下をコピーしてください：", text);
+    });
+  }
+</script>
 </body>
 </html>
