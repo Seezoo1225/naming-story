@@ -53,7 +53,7 @@
 
     /* カードグリッド（横並び） */
     .cards{
-      margin-top:20px;
+      margin-top:12px;
       display:grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap:18px;
@@ -67,7 +67,7 @@
     .name{font-size:22px; color:var(--edo); margin:0}
     .reading{margin:0; font-size:14px; color:#6b6480}
     .copy{margin:6px 0 0 0; font-style:italic; color:#4a3e6b}
-    .story{margin:0; line-height:1.75}
+    .story{margin:0; line-height:1.85; white-space:pre-line;} /* 段落風 */
 
     table{
       width:100%; border-collapse:collapse; margin-top:4px; font-size:14px;
@@ -77,7 +77,7 @@
     th{background:#f5f0fb; color:#4a3e6b; font-weight:600}
     .subttl{margin:14px 0 6px 0; font-size:15px; color:#5a5270; font-weight:700}
 
-    /* 運勢バッジ（色分けを明確に） */
+    /* 運勢バッジ（色分け） */
     .pill{display:inline-block; padding:.25rem .55rem; border-radius:999px; font-size:12px; border:1px solid #ddd}
     .pill.daikichi { background:#ffe8e8; color:#c01818; border-color:#ffcaca; } /* 大吉=赤 */
     .pill.chukichi { background:#fff2df; color:#b66a00; border-color:#ffd9a8; } /* 中吉=オレンジ */
@@ -93,13 +93,14 @@
 
     /* 五格説明 */
     .legend{
-      margin-top:24px; font-size:13px; color:#5a5270;
+      margin-top:18px; font-size:13px; color:#5a5270;
       display:grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap:12px;
     }
     .legend .box{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px}
 
-    /* ステータス */
-    #status{margin: 16px 0 4px 0; font-size:14px; color:#6b6480}
+    /* ステータス & 流派表記 */
+    #status{margin: 12px 0 0 0; font-size:14px; color:#6b6480}
+    #policyLine{margin: 6px 0 0 0; font-size:13px; color:#6b6480}
   </style>
 </head>
 <body>
@@ -134,6 +135,7 @@
       </label>
       <button class="primary" onclick="generate()">無料で診断する</button>
       <div id="status" class="muted"></div>
+      <div id="policyLine" class="muted"></div>
     </div>
 
     <!-- 結果 -->
@@ -170,6 +172,21 @@
       return `<span class="pill ${cls}">${s}</span>`;
     };
 
+    // 段落化（「。」でほどよく改行）→ 見やすい段落風
+    function paragraphize(str){
+      if(!str) return "";
+      const s = String(str).replace(/\s+/g,"");
+      const parts = s.split(/(?<=。)/);
+      const chunks = [];
+      let buf = "";
+      for(const p of parts){
+        if((buf + p).length > 60){ chunks.push(buf); buf = p; }
+        else { buf += p; }
+      }
+      if(buf) chunks.push(buf);
+      return chunks.join("\n\n"); // white-space:pre-line で段落表示
+    }
+
     // breakdown を "山:3 / 田:5 / 太:4 / 志:3" のように
     function renderBreakdown(candidate){
       const bdSurname = candidate?.strokes?.surname?.breakdown || [];
@@ -190,7 +207,7 @@
       return [
         `【名前】${candidate.name}（読み: ${candidate.reading||"-"}）`,
         `【コピー】${candidate.copy||"-"}`,
-        `【ストーリー】${candidate.story||"-"}`,
+        `【ストーリー】${(candidate.story||"-").replace(/\s+$/,"")}`,
         `【五格】天:${textOrDash(f.tenkaku)} / 人:${textOrDash(f.jinkaku)} / 地:${textOrDash(f.chikaku)} / 外:${textOrDash(f.gaikaku)} / 総:${textOrDash(f.soukaku)}`,
         `【運勢】総合:${textOrDash(f?.luck?.overall)} / 仕事:${textOrDash(f?.luck?.work)} / 恋愛:${textOrDash(f?.luck?.love)} / 健康:${textOrDash(f?.luck?.health)}`,
         `【画数】姓:${textOrDash(sSum)} / 名:${textOrDash(gSum)} / 総画:${textOrDash(tSum)} / 内訳:${renderBreakdown(candidate)}`
@@ -210,8 +227,10 @@
       }
 
       const status = document.getElementById("status");
+      const policyLine = document.getElementById("policyLine");
       const results = document.getElementById("results");
       status.textContent = "診断中…";
+      policyLine.textContent = "";
       results.innerHTML = "";
 
       try{
@@ -228,6 +247,11 @@
           return;
         }
 
+        // 流派/計算方式を表示（なければ五格法）
+        const ryuha = data?.policy?.ryuha || "五格法（新字体・霊数なし）";
+        const notes = data?.policy?.notes || "現代的で読みやすい表記を優先";
+        policyLine.textContent = `流派/計算方式：${ryuha} ／ 方針：${notes}`;
+
         results.innerHTML = data.candidates.map((c, idx) => {
           const f = c.fortune || {};
           const s = c.strokes || {};
@@ -241,15 +265,15 @@
               <h3 class="name">${c.name || "-"}</h3>
               <p class="reading">読み：${textOrDash(c.reading)}</p>
               <p class="copy">${c.copy ? c.copy : ""}</p>
-              <p class="story">${c.story ? c.story : ""}</p>
+              <p class="story">${paragraphize(c.story)}</p>
 
               <div class="subttl">姓名判断（推定）</div>
               <table>
                 <tr><th>天格</th><td>${textOrDash(f.tenkaku)}</td><th>人格</th><td>${textOrDash(f.jinkaku)}</td></tr>
                 <tr><th>地格</th><td>${textOrDash(f.chikaku)}</td><th>外格</th><td>${textOrDash(f.gaikaku)}</td></tr>
                 <tr><th>総格</th><td>${textOrDash(f.soukaku)}</td><th>総合運</th><td>${luckBadge(f?.luck?.overall)}</td></tr>
-                <tr><th>仕事運</th><td>${luckBadge(f?.luck?.work)}</td><th>恋愛運</th><td>${luckBadge(f?.luck?.love)}</td></tr>
-                <tr><th>健康運</th><td>${luckBadge(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
+                <tr><th>💼 仕事運</th><td>${luckBadge(f?.luck?.work)}</td><th>❤️ 恋愛運</th><td>${luckBadge(f?.luck?.love)}</td></tr>
+                <tr><th>🌸 健康運</th><td>${luckBadge(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
               </table>
 
               <div class="subttl">画数診断（推定）</div>
