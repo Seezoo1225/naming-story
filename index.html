@@ -8,13 +8,11 @@
   <style>
     :root{
       --edo: #4b0082;           /* 江戸紫（主色） */
-      --edo-50:#f5f0fb; 
-      --edo-100:#ece3f7;
-      --ink:#2b2442;
+      --edo-50:#f5f0fb;
       --line:#e7e2ee;
-      --ok:#2c9944;
-      --warn:#c78600;
-      --bad:#c23c3c;
+      --ok:#1e8d3e;
+      --warn:#b66a00;
+      --bad:#a10d3a;
     }
     *{box-sizing:border-box}
     body{
@@ -76,14 +74,17 @@
       border:1px solid var(--line); border-radius:10px; overflow:hidden;
     }
     th,td{border:1px solid var(--line); padding:8px; text-align:center;}
-    th{background:var(--edo-50); color:#4a3e6b; font-weight:600}
+    th{background:#f5f0fb; color:#4a3e6b; font-weight:600}
     .subttl{margin:14px 0 6px 0; font-size:15px; color:#5a5270; font-weight:700}
 
-    /* 運勢バッジ */
-    .pill{display:inline-block; padding:.22rem .5rem; border-radius:999px; font-size:12px; border:1px solid #ddd}
-    .good{background:#ebf6ef; color:var(--ok); border-color:#cdebd6}
-    .mid{background:#fff6e3; color:var(--warn); border-color:#f1ddaa}
-    .bad{background:#fdecec; color:var(--bad); border-color:#f3c6c6}
+    /* 運勢バッジ（色分けを明確に） */
+    .pill{display:inline-block; padding:.25rem .55rem; border-radius:999px; font-size:12px; border:1px solid #ddd}
+    .pill.daikichi { background:#ffe8e8; color:#c01818; border-color:#ffcaca; } /* 大吉=赤 */
+    .pill.chukichi { background:#fff2df; color:#b66a00; border-color:#ffd9a8; } /* 中吉=オレンジ */
+    .pill.kichi    { background:#eaf7ef; color:#1e8d3e; border-color:#cdebd6; } /* 吉=緑 */
+    .pill.shokichi { background:#fffbe6; color:#7a6a00; border-color:#f1e9b3; } /* 小吉=黄 */
+    .pill.kyou     { background:#f8e8ef; color:#a10d3a; border-color:#f2c1d2; } /* 凶=えんじ */
+    .pill.daikyou  { background:#ffe1e6; color:#8e001a; border-color:#ffb9c6; } /* 大凶=濃い赤 */
 
     /* ボタン群 */
     .actions{display:flex; gap:8px; margin-top:4px}
@@ -151,16 +152,26 @@
   <script>
     // 便利関数
     const textOrDash = (v)=> (v===0 || v===null || v===undefined || v==="") ? "-" : v;
-    const pickLuckPill = (s) => {
+
+    // 運勢テキスト→バッジのクラス付け
+    function luckToClass(s){
+      const t = String(s||"");
+      if (t.includes("大凶")) return "daikyou";
+      if (t.includes("凶"))   return "kyou";
+      if (t.includes("大吉")) return "daikichi";
+      if (t.includes("中吉")) return "chukichi";
+      if (t.includes("小吉")) return "shokichi";
+      if (t.includes("吉"))   return "kichi";
+      return "";
+    }
+    const luckBadge = (s) => {
       if(!s) return '<span class="pill">-</span>';
-      if(String(s).includes("大凶") || String(s).includes("凶")) return `<span class="pill bad">${s}</span>`;
-      if(String(s).includes("小吉") || String(s).includes("中")) return `<span class="pill mid">${s}</span>`;
-      return `<span class="pill good">${s}</span>`;
+      const cls = luckToClass(s);
+      return `<span class="pill ${cls}">${s}</span>`;
     };
 
     // breakdown を "山:3 / 田:5 / 太:4 / 志:3" のように
     function renderBreakdown(candidate){
-      // 両パターン対応（strokes.surname/given or strokes.breakdown）
       const bdSurname = candidate?.strokes?.surname?.breakdown || [];
       const bdGiven   = candidate?.strokes?.given?.breakdown || [];
       const bdBoth = Array.isArray(bdSurname) || Array.isArray(bdGiven)
@@ -217,7 +228,6 @@
           return;
         }
 
-        // カード描画（横並びグリッド）
         results.innerHTML = data.candidates.map((c, idx) => {
           const f = c.fortune || {};
           const s = c.strokes || {};
@@ -237,9 +247,9 @@
               <table>
                 <tr><th>天格</th><td>${textOrDash(f.tenkaku)}</td><th>人格</th><td>${textOrDash(f.jinkaku)}</td></tr>
                 <tr><th>地格</th><td>${textOrDash(f.chikaku)}</td><th>外格</th><td>${textOrDash(f.gaikaku)}</td></tr>
-                <tr><th>総格</th><td>${textOrDash(f.soukaku)}</td><th>総合運</th><td>${pickLuckPill(f?.luck?.overall)}</td></tr>
-                <tr><th>仕事運</th><td>${pickLuckPill(f?.luck?.work)}</td><th>恋愛運</th><td>${pickLuckPill(f?.luck?.love)}</td></tr>
-                <tr><th>健康運</th><td>${pickLuckPill(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
+                <tr><th>総格</th><td>${textOrDash(f.soukaku)}</td><th>総合運</th><td>${luckBadge(f?.luck?.overall)}</td></tr>
+                <tr><th>仕事運</th><td>${luckBadge(f?.luck?.work)}</td><th>恋愛運</th><td>${luckBadge(f?.luck?.love)}</td></tr>
+                <tr><th>健康運</th><td>${luckBadge(f?.luck?.health)}</td><th>備考</th><td>${textOrDash(f.note)}</td></tr>
               </table>
 
               <div class="subttl">画数診断（推定）</div>
@@ -257,8 +267,6 @@
         }).join("");
 
         status.textContent = debug ? "（デバッグモード）ダミー結果を表示中。" : "生成完了。";
-
-        // コピー用データを保持
         window.__lastCandidates = data.candidates;
 
       }catch(err){
