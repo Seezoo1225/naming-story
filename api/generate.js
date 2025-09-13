@@ -140,7 +140,6 @@ function normalizeCandidates(candidates, surname) {
 }
 
 // -------- OpenAI プロンプト --------
-
 const SYSTEM_PROMPT = `
 You are a Japanese naming & seimei-handan expert.
 Respond only in json. The output must be a single valid JSON object.
@@ -148,9 +147,11 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
 
 厳守ルール:
 - 流派/計算方式は「五格法（新字体・霊数なし）」を用いる（天格/人格/地格/外格/総格）。
-- 候補は必ず3つ。name は「<苗字><スペース><名>」とし、苗字（入力値）を先頭に付ける。
-- **name にカタカナを使ってはいけない**（漢字またはひらがなにする）。reading は必ず「ひらがな」。
-- strokes.breakdown は姓→名の順ですべての字を列挙（["字", 画数]）。total/各格は整数。
+- 候補は必ず3つ。name は「<苗字><スペース><名>」形式で、苗字（入力値）を先頭に付ける。
+- **名は原則『漢字』で返す（常用漢字/人名用漢字・読みやすい字を優先）。できれば2文字、1文字/3文字も可。**
+- どうしても適切な漢字候補が無い場合のみ『ひらがな』で可。**カタカナは禁止**。
+- reading は必ず『ひらがな』。
+- strokes.breakdown は姓→名の順で全字を列挙（["字", 画数]）。total/各格は整数。
 - luck は日本語（大吉/中吉/吉/小吉/凶/大凶 など）。
 - story は日本語で 200〜350 字・3〜5文、改行を想定した自然な文体。
 - JSON 以外の出力は禁止。
@@ -159,17 +160,17 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
 {
   "candidates":[
     {
-      "name":"山田 たいし",
-      "reading":"たいし",
-      "copy":"大きな志を抱いて",
+      "name":"山田 明人",
+      "reading":"あきと",
+      "copy":"明るさで道を照らす",
       "story":"200〜350字程度の日本語文（3〜5文）",
       "strokes":{
         "surname":{"total":8,"breakdown":[["山",3],["田",5]]},
-        "given":{"total":7,"breakdown":[["た",4],["い",2],["し",1]]},
-        "total":15
+        "given":{"total":?,"breakdown":[["明",8],["人",2]]},
+        "total":?
       },
       "fortune":{
-        "tenkaku":8,"jinkaku":9,"chikaku":7,"gaikaku":6,"soukaku":15,
+        "tenkaku":8,"jinkaku":?,"chikaku":?,"gaikaku":?,"soukaku":?,
         "luck":{"overall":"吉","work":"大吉","love":"中吉","health":"吉"},
         "note":"補足（任意）"
       }
@@ -178,7 +179,6 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
   "policy":{"ryuha":"五格法（新字体・霊数なし）","notes":"現代的で読みやすい表記を優先"}
 }
 `.trim();
-
 // -------- ハンドラ --------
 
 export default async function handler(req, res) {
@@ -257,8 +257,12 @@ if (String(req.query?.debug) === "1") {
 }
 
     // --- OpenAI 呼び出し ---
-    const user = `苗字: ${surname}\n性別: ${gender}\n希望イメージ: ${concept}`.trim();
-
+const user = [
+  `苗字: ${surname}`,
+  `性別: ${gender}`,
+  `希望イメージ: ${concept}`,
+  `表記方針: 基本は漢字（常用/人名用漢字・読みやすい2文字中心）。難しい場合のみひらがな。カタカナ不可。`
+].join("\n");
     const oaRes = await fetch(OPENAI_URL, {
       method: "POST",
       headers: {
