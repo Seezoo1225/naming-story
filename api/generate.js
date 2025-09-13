@@ -195,57 +195,66 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: "surname and concept are required" });
     }
 
-    // --- デバッグ（ダミー） ---
-    if (String(req.query?.debug) === "1") {
-      const fallback = {
-        candidates: [
-          {
-            name: `${surname} せいた`,
-            reading: "せいた",
-            copy: "夢を追い続ける",
-            story: "挑戦を恐れず、夢に向かって突き進む若者像。周囲を勇気づけ、共に成長する道を選びます。将来は創造の分野で名を残すことを目指します。",
-            strokes: {
-              surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 7, breakdown: [["せ",3],["い",2],["た",4]] },
-              total: 15
-            },
-            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:15,
-              luck:{ overall:"吉", work:"中吉", love:"吉", health:"吉" }, note:"debug fallback" }
-          },
-          {
-            name: `${surname} かい`,
-            reading: "かい",
-            copy: "新しい世界を探求する",
-            story: "冒険心あふれる若者。新しい経験を求めて旅をし、多様性を大切にします。行動力で周囲を巻き込み、楽しい体験を共有していきます。",
-            strokes: {
-              surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 3, breakdown: [["か",3],["い",2]] }, // totalは後で補正されます
-              total: 11
-            },
-            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:11,
-              luck:{ overall:"中吉", work:"吉", love:"中吉", health:"吉" }, note:"debug fallback" }
-          },
-          {
-            name: `${surname} りょうた`,
-            reading: "りょうた",
-            copy: "自由な精神を持つ",
-            story: "多様な文化に触れることで視野を育てるタイプ。明るい性格で周囲に良い影響を与え、将来は国際的な舞台での活躍を目指します。",
-            strokes: {
-              surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 7, breakdown: [["り",2],["ょ",2],["う",2],["た",4]] },
-              total: 15
-            },
-            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:15,
-              luck:{ overall:"吉", work:"吉", love:"中吉", health:"吉" }, note:"debug fallback" }
-          }
-        ],
-        policy: { ryuha: "五格法（新字体・霊数なし）", notes: "現代的で読みやすい表記を優先" }
-      };
+// --- デバッグ（ダミー） ---
+if (String(req.query?.debug) === "1") {
+  const fallback = {
+    candidates: [
+      {
+        name: `${surname} せいた`,
+        reading: "せいた",
+        copy: "夢を追い続ける",
+        story: "挑戦を恐れず、夢に向かって突き進む若者像。\n\n周囲を勇気づけ、共に成長する道を選びます。将来は創造の分野で名を残すことを目指します。",
+        strokes: {
+          surname: { total: 8, breakdown: [["山", 3], ["田", 5]] },
+          given: { total: 7, breakdown: [["せ", 3], ["い", 2], ["た", 4]] },
+          total: 15
+        },
+        fortune: {
+          tenkaku: 0, jinkaku: 0, chikaku: 0, gaikaku: 0, soukaku: 15,
+          luck: { overall: "吉", work: "中吉", love: "吉", health: "吉" },
+          note: "debug fallback"
+        }
+      },
+      {
+        name: `${surname} かい`,
+        reading: "かい",
+        copy: "新しい世界を探求する",
+        story: "冒険心あふれる若者。新しい経験を求めて旅をし、多様性を大切にします。\n\n行動力で周囲を巻き込み、楽しい体験を共有していきます。",
+        strokes: {
+          surname: { total: 8, breakdown: [["山", 3], ["田", 5]] },
+          given: { total: 5, breakdown: [["か", 3], ["い", 2]] },
+          total: 13
+        },
+        fortune: {
+          tenkaku: 0, jinkaku: 0, chikaku: 0, gaikaku: 0, soukaku: 13,
+          luck: { overall: "中吉", work: "吉", love: "中吉", health: "吉" },
+          note: "debug fallback"
+        }
+      },
+      {
+        name: `${surname} りょうた`,
+        reading: "りょうた",
+        copy: "自由な精神を持つ",
+        story: "多様な文化に触れることで視野を育てるタイプ。\n\n明るい性格で周囲に良い影響を与え、将来は国際的な舞台での活躍を目指します。",
+        strokes: {
+          surname: { total: 8, breakdown: [["山", 3], ["田", 5]] },
+          given: { total: 9, breakdown: [["り", 2], ["ょ", 2], ["う", 2], ["た", 4]] },
+          total: 17
+        },
+        fortune: {
+          tenkaku: 0, jinkaku: 0, chikaku: 0, gaikaku: 0, soukaku: 17,
+          luck: { overall: "吉", work: "吉", love: "中吉", health: "吉" },
+          note: "debug fallback"
+        }
+      }
+    ],
+    policy: { ryuha: "五格法（新字体・霊数なし）", notes: "現代的で読みやすい表記を優先" }
+  };
 
-      // 辞書補正＆五格再計算
-      const normalized = normalizeCandidates(fallback.candidates, surname);
-      return res.status(200).json({ candidates: normalized, policy: fallback.policy });
-    }
+  // 辞書補正＆五格再計算（ここで正しい値に上書きされます）
+  const normalized = normalizeCandidates(fallback.candidates, surname);
+  return res.status(200).json({ candidates: normalized, policy: fallback.policy });
+}
 
     // --- OpenAI 呼び出し ---
     const user = `苗字: ${surname}\n性別: ${gender}\n希望イメージ: ${concept}`.trim();
