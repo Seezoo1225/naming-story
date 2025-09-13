@@ -1,11 +1,14 @@
 // api/generate.js
-// サーバ側で：AIの画数を鵜呑みにせず、辞書で補正 → 五格（天/人/地/外/総）を再計算して返す。
-// 方式：五格法（新字体・霊数なし）を明示。luck（吉/凶など）はAIのまま利用。
+// 概要：
+// - OpenAIの返答を受け取りつつ、サーバ側で「名前にカタカナ禁止（漢字/ひらがなのみ）」を強制。
+// - もし name/reading にカタカナが含まれたら自動で「ひらがな」へ変換してから採用。
+// - 画数は辞書（新字体・霊数なし＋かな画数）で補正し、五格（天/人/地/外/総）を再計算して返却。
+// - luck（吉/凶などの判定）はAI返答をそのまま利用。
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
-/** 画数辞書（新字体・霊数なし）よく使う名前漢字を中心に収録。
- *  足りない場合は随時追加してください。 */
+/** 画数辞書（新字体・霊数なし）＋ ひらがな画数
+ *  必要に応じて追記してください。 */
 const STROKES = {
   // 基本
   "一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9,"十":10,
@@ -14,7 +17,7 @@ const STROKES = {
   "外":5,"本":5,"司":5,"加":5,"北":5,"古":5,"右":5,"左":5,"名":6,"各":6,"光":6,"同":6,"向":6,"百":6,
   "有":6,"安":6,"守":6,"吉":6,"朱":6,"成":6,"兆":6,"次":6,"来":7,"君":7,"良":7,"里":7,
   "和":8,"直":8,"青":8,"忠":8,"知":8,"春":9,"音":9,"美":9,"秋":9,"玲":10,"真":10,"夏":10,
-  "龍":16,"竜":10,
+  "竜":10,"龍":16,
 
   // よく使う名前漢字
   "愛":13,"葵":12,"明":8,"彩":11,"歩":8,"陽":12,"結":12,"優":17,"悠":11,"勇":9,"佑":7,"祐":10,"友":4,
@@ -25,19 +28,37 @@ const STROKES = {
   "尊":12,"志":7,"士":3,"智":12,"直":8,"光":6,"輝":15,"貴":12,"桂":10,"圭":6,"慧":15,"恵":10,"慶":15,
   "景":12,"汰":7,"拓":8,"匠":6,"将":10,"章":11,"彰":14,"剛":10,"豪":14,"翼":17,"隼":10,"浩":10,"航":10,
   "楓":13,"椛":12,"樹":16,"尚":8,"慎":13,"聡":14,"総":14,"蒼":13,"壮":6,"爽":11,"然":12,"禅":13,"染":9,
-  "遥":13,"紬":10
+  "遥":13,"紬":10,
+
+  // ひらがな画数（一般的に使われる数え方の一例）
+  "あ":3,"い":2,"う":2,"え":2,"お":3,
+  "か":3,"き":4,"く":1,"け":3,"こ":2,
+  "さ":3,"し":1,"す":2,"せ":3,"そ":1,
+  "た":4,"ち":2,"つ":1,"て":1,"と":2,
+  "な":2,"に":3,"ぬ":2,"ね":2,"の":1,
+  "は":3,"ひ":1,"ふ":4,"へ":1,"ほ":4,
+  "ま":3,"み":3,"む":3,"め":3,"も":3,
+  "や":2,"ゆ":2,"よ":2,
+  "ら":2,"り":2,"る":2,"れ":2,"ろ":1,
+  "わ":2,"を":3,"ん":1,
+  "ぁ":2,"ぃ":1,"ぅ":1,"ぇ":1,"ぉ":2,
+  "ゃ":2,"ゅ":2,"ょ":2,"っ":1
 };
 
-// ---------- 共通ユーティリティ ----------
+// -------- KATAKANA → HIRAGANA 変換 --------
+const kataToHira = (str) =>
+  String(str || "").replace(/[\u30A1-\u30F6]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
 
-// 1文字の画数：辞書優先、無ければ aiGuess（AIが返した値）を採用。どちらも無ければ null。
+// -------- ユーティリティ --------
+
 function strokeOf(ch, aiGuess) {
   if (ch in STROKES) return STROKES[ch];
   if (typeof aiGuess === "number" && isFinite(aiGuess) && aiGuess > 0) return aiGuess;
   return null;
 }
 
-// 入力姓と候補の full name から、姓/名の各文字配列を切り出す（スペースは除去）
 function splitName(surname, fullName) {
   const clean = String(fullName || "").replace(/\s+/g, "");
   const sChars = Array.from(surname);
@@ -46,7 +67,6 @@ function splitName(surname, fullName) {
   return { sChars, gChars };
 }
 
-// AIの breakdown を {字: 画} のマップ化
 function aiBreakdownMap(candidate) {
   const m = {};
   const bdS = candidate?.strokes?.surname?.breakdown || [];
@@ -59,7 +79,6 @@ function aiBreakdownMap(candidate) {
   return m;
 }
 
-// 五格（五格法・新字体・霊数なし）を計算
 function calcGokaku(sSum, gSum, sBD, gBD) {
   const total = sSum + gSum;
   const lastSurname = sBD[sBD.length - 1]?.count || 0;
@@ -72,9 +91,13 @@ function calcGokaku(sSum, gSum, sBD, gBD) {
   return { tenkaku, jinkaku, chikaku, gaikaku, soukaku, total };
 }
 
-// 候補1件を辞書で補正し、五格再計算したオブジェクトを返す
 function recalcCandidate(candidate, inputSurname) {
-  const { sChars, gChars } = splitName(inputSurname, candidate?.name || "");
+  // ルール：name/readingのカタカナは「ひらがな」に強制変換
+  const fixedName = kataToHira(candidate?.name || "");
+  const fixedReading = kataToHira(candidate?.reading || "");
+
+  // name を差し替えた状態で分割
+  const { sChars, gChars } = splitName(inputSurname, fixedName);
   const aiMap = aiBreakdownMap(candidate);
 
   const sBD = sChars.map(ch => ({ char: ch, count: strokeOf(ch, aiMap[ch]) }));
@@ -86,10 +109,8 @@ function recalcCandidate(candidate, inputSurname) {
 
   const gk = calcGokaku(sSum, gSum, sBD, gBD);
 
-  // 互換のため strokes は従来の形（配列[x, n]）でも返す
   const toArr = (list) => list.map(x => [x.char, x.count ?? null]);
 
-  // fortune の数値は補正値に置き換え、luck（吉凶）は AI からそのまま維持
   const fortune = {
     ...(candidate?.fortune || {}),
     tenkaku: gk.tenkaku,
@@ -101,49 +122,50 @@ function recalcCandidate(candidate, inputSurname) {
 
   return {
     ...candidate,
+    name: fixedName,
+    reading: fixedReading ? kataToHira(fixedReading) : fixedReading,
     strokes: {
       surname: { total: sSum, breakdown: toArr(sBD) },
       given:   { total: gSum, breakdown: toArr(gBD) },
       total: gk.total,
     },
     fortune,
+    policy: candidate?.policy,
     __calc: { sBD, gBD, sSum, gSum, total: gk.total, gokaku: gk }
   };
 }
 
-// 受け取った candidates 全体を補正
 function normalizeCandidates(candidates, surname) {
   return (Array.isArray(candidates) ? candidates : []).map(c => recalcCandidate(c, surname));
 }
 
-// ---------- OpenAI へのプロンプト ----------
+// -------- OpenAI プロンプト --------
 
 const SYSTEM_PROMPT = `
 You are a Japanese naming & seimei-handan expert.
 Respond only in json. The output must be a single valid JSON object.
 Do not add any explanations, prose, markdown, or code fences outside the json.
 
-必須ルール:
+厳守ルール:
 - 流派/計算方式は「五格法（新字体・霊数なし）」を用いる（天格/人格/地格/外格/総格）。
-- 候補は3つ。苗字（入力値）を必ず name の先頭に付ける。
-- strokes.breakdown は姓→名の順ですべての漢字を必ず列挙（["漢字", 画数]）。
-- strokes.surname.total / strokes.given.total / strokes.total は必ず整数。
-- fortune の天格/人格/地格/外格/総格も必ず整数（推定可・空欄禁止）。
+- 候補は必ず3つ。name は「<苗字><スペース><名>」とし、苗字（入力値）を先頭に付ける。
+- **name にカタカナを使ってはいけない**（漢字またはひらがなにする）。reading は必ず「ひらがな」。
+- strokes.breakdown は姓→名の順ですべての字を列挙（["字", 画数]）。total/各格は整数。
 - luck は日本語（大吉/中吉/吉/小吉/凶/大凶 など）。
-- story は日本語で 3〜5 文、合計 200〜350 文字目安。改行を想定して自然な段落になじむ文体にする。
+- story は日本語で 200〜350 字・3〜5文、改行を想定した自然な文体。
 - JSON 以外の出力は禁止。
 
 返却形式の例:
 {
   "candidates":[
     {
-      "name":"山田 太志",
+      "name":"山田 たいし",
       "reading":"たいし",
       "copy":"大きな志を抱いて",
       "story":"200〜350字程度の日本語文（3〜5文）",
       "strokes":{
         "surname":{"total":8,"breakdown":[["山",3],["田",5]]},
-        "given":{"total":7,"breakdown":[["太",4],["志",3]]},
+        "given":{"total":7,"breakdown":[["た",4],["い",2],["し",1]]},
         "total":15
       },
       "fortune":{
@@ -157,7 +179,7 @@ Do not add any explanations, prose, markdown, or code fences outside the json.
 }
 `.trim();
 
-// ---------- ハンドラ ----------
+// -------- ハンドラ --------
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -173,56 +195,59 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: "surname and concept are required" });
     }
 
-    // ---------- デバッグモード（ダミー） ----------
+    // --- デバッグ（ダミー） ---
     if (String(req.query?.debug) === "1") {
       const fallback = {
         candidates: [
           {
-            name: `${surname} 未来志`, reading: "みらいし",
-            copy: "未来へ進む意志を込めて。",
-            story: "新しい道を切り開き、周囲に希望を灯す人を描きます。穏やかな語り口で人の心をほぐし、迷いの先に光を示す存在です。日々の小さな積み重ねを大切にし、周囲と歩調をそろえながら前へと進みます。",
+            name: `${surname} せいた`,
+            reading: "せいた",
+            copy: "夢を追い続ける",
+            story: "挑戦を恐れず、夢に向かって突き進む若者像。周囲を勇気づけ、共に成長する道を選びます。将来は創造の分野で名を残すことを目指します。",
             strokes: {
               surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 8, breakdown: [["未",5],["志",3]] },
-              total: 16
+              given:   { total: 7, breakdown: [["せ",3],["い",2],["た",4]] },
+              total: 15
             },
-            fortune: { tenkaku:8, jinkaku:8, chikaku:8, gaikaku:8, soukaku:16,
+            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:15,
+              luck:{ overall:"吉", work:"中吉", love:"吉", health:"吉" }, note:"debug fallback" }
+          },
+          {
+            name: `${surname} かい`,
+            reading: "かい",
+            copy: "新しい世界を探求する",
+            story: "冒険心あふれる若者。新しい経験を求めて旅をし、多様性を大切にします。行動力で周囲を巻き込み、楽しい体験を共有していきます。",
+            strokes: {
+              surname: { total: 8, breakdown: [["山",3],["田",5]] },
+              given:   { total: 3, breakdown: [["か",3],["い",2]] }, // totalは後で補正されます
+              total: 11
+            },
+            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:11,
+              luck:{ overall:"中吉", work:"吉", love:"中吉", health:"吉" }, note:"debug fallback" }
+          },
+          {
+            name: `${surname} りょうた`,
+            reading: "りょうた",
+            copy: "自由な精神を持つ",
+            story: "多様な文化に触れることで視野を育てるタイプ。明るい性格で周囲に良い影響を与え、将来は国際的な舞台での活躍を目指します。",
+            strokes: {
+              surname: { total: 8, breakdown: [["山",3],["田",5]] },
+              given:   { total: 7, breakdown: [["り",2],["ょ",2],["う",2],["た",4]] },
+              total: 15
+            },
+            fortune: { tenkaku:8, jinkaku:?, chikaku:?, gaikaku:?, soukaku:15,
               luck:{ overall:"吉", work:"吉", love:"中吉", health:"吉" }, note:"debug fallback" }
-          },
-          {
-            name: `${surname} 未来翔`, reading: "みらいしょう",
-            copy: "未来へ翔ける力強さ。",
-            story: "挑戦を恐れず、高く遠くまで視野を伸ばすタイプ。仲間の背中を押しながら、困難を学びに変え、次のチャンスに結びつけます。軽やかな風のように、周囲に前向きな流れを生み出します。",
-            strokes: {
-              surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 12, breakdown: [["未",5],["翔",7]] },
-              total: 20
-            },
-            fortune: { tenkaku:8, jinkaku:10, chikaku:12, gaikaku:10, soukaku:20,
-              luck:{ overall:"吉", work:"大吉", love:"中吉", health:"吉" }, note:"debug fallback" }
-          },
-          {
-            name: `${surname} 未来光`, reading: "みらいこう",
-            copy: "未来を照らす光。",
-            story: "周囲にやさしい明るさをもたらし、人の長所を見つけるのが得意。静かな芯の強さを持ち、困難な時にも落ち着いて選択します。気づけば皆の目印となり、安心感を広げていきます。",
-            strokes: {
-              surname: { total: 8, breakdown: [["山",3],["田",5]] },
-              given:   { total: 8, breakdown: [["未",5],["光",3]] },
-              total: 16
-            },
-            fortune: { tenkaku:8, jinkaku:8, chikaku:8, gaikaku:8, soukaku:16,
-              luck:{ overall:"中吉", work:"吉", love:"吉", health:"吉" }, note:"debug fallback" }
           }
         ],
-        policy: { ryuha:"五格法（新字体・霊数なし）", notes:"現代的で読みやすい表記を優先" }
+        policy: { ryuha: "五格法（新字体・霊数なし）", notes: "現代的で読みやすい表記を優先" }
       };
 
-      // ここで辞書補正
+      // 辞書補正＆五格再計算
       const normalized = normalizeCandidates(fallback.candidates, surname);
       return res.status(200).json({ candidates: normalized, policy: fallback.policy });
     }
 
-    // ---------- OpenAI 呼び出し ----------
+    // --- OpenAI 呼び出し ---
     const user = `苗字: ${surname}\n性別: ${gender}\n希望イメージ: ${concept}`.trim();
 
     const oaRes = await fetch(OPENAI_URL, {
@@ -252,7 +277,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // JSON取り出し
+    // JSON抽出
     let raw;
     try {
       raw = JSON.parse(oaJson?.choices?.[0]?.message?.content || "{}");
@@ -261,7 +286,7 @@ export default async function handler(req, res) {
       raw = m ? JSON.parse(m[0]) : {};
     }
 
-    // ここでサーバ側も辞書補正
+    // サーバ側で：カタカナ→ひらがな変換＋辞書補正＋五格再計算
     const normalized = normalizeCandidates(raw?.candidates || [], surname);
 
     const policy = raw?.policy || {
